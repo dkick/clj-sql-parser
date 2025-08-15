@@ -6,29 +6,27 @@
    [dkick.clj-sql-parser.statement :refer [statement-visitor]]
    [honey.sql :as sql]))
 
-(def the-statement-visitor (statement-visitor))
+(def x-statement-visitor (statement-visitor))
 
 (defn reparse [sql-str]
-  (let [sql-honey  (-> sql-str
-                       sut/parse
-                       (.accept the-statement-visitor (atom [])))
-        [sql-str'] (sql/format sql-honey {:inline true})
-        sql-honey' (-> sql-str'
-                       sut/parse
-                       (.accept the-statement-visitor (atom [])))]
+  (let [x-sql-honey  (sut/sql-honey sql-str)
+        [sql-str']   (sql/format x-sql-honey {:inline true})
+        x-sql-honey' (sut/sql-honey sql-str')]
     (assert (= sql-str sql-str'))
-    (assert (= sql-honey sql-honey'))
-    {:sql-str  sql-str,  :sql-honey  sql-honey
-     :sql-str' sql-str', :sql-honey' sql-honey'}))
+    (assert (= x-sql-honey x-sql-honey'))
+    {:sql-str  sql-str,  :sql-honey  x-sql-honey
+     :sql-str' sql-str', :sql-honey' x-sql-honey'}))
 
-(defn sql-honey [sql-str]
+(defn get-sql-honey [sql-str]
   (:sql-honey (reparse sql-str)))
 
 (deftest select-test
   (testing "Select a literal 1"
-    (is (= {:select [1]} (sql-honey "SELECT 1")))))
+    (is (= {:select [1]} (get-sql-honey "SELECT 1"))))
+  #_(testing "Select * from a table"
+      (get-sql-honey "SELECT * FROM t")))
 
 (comment
   (-> (sut/parse "SELECT 1")
-      (.accept the-statement-visitor (atom [])))
+      (.accept x-statement-visitor (atom [])))
   #_|)

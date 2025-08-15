@@ -9,7 +9,7 @@
 (defmulti -visit multifn/visit-group)
 
 (defmethod -visit PlainSelect [_ context]
-  (swap! context (fn [$] [(apply sqh/select $)])))
+  (swap! context (fn [x] [(apply sqh/select x)])))
 
 (defn select-visitor
   [expression-visitor pivot-visitor select-item-visitor from-item-visitor]

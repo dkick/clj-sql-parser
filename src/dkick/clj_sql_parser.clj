@@ -1,4 +1,6 @@
 (ns dkick.clj-sql-parser
+  (:require
+   [dkick.clj-sql-parser.statement :refer [statement-visitor]])
   (:import
    (java.util.function Consumer)
    (net.sf.jsqlparser.parser CCJSqlParser CCJSqlParserUtil)
@@ -14,6 +16,20 @@
                (.withAllowComplexParsing ^CCJSqlParser parser)))]
      (parse s ^Consumer c)))
   ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
+
+(def x-statement-visitor (statement-visitor))
+
+(defmulti sql-honey type)
+
+(defmethod sql-honey String [s]
+  (let [context (atom [])]
+    (-> s
+        parse
+        (.accept x-statement-visitor context))))
+
+(defmethod sql-honey Statement [x]
+  (let [context (atom [])]
+    (.accept x x-statement-visitor context)))
 
 (defmulti sql->json type)
 
