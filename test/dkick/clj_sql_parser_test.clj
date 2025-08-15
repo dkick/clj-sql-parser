@@ -3,10 +3,7 @@
    [clojure.test :refer [deftest is testing]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [dkick.clj-sql-parser.statement :refer [statement-visitor]]
    [honey.sql :as sql]))
-
-(def x-statement-visitor (statement-visitor))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -23,10 +20,11 @@
 (deftest select-test
   (testing "Select a literal 1"
     (is (= {:select [1]} (get-sql-honey "SELECT 1"))))
-  #_(testing "Select * from a table"
-      (get-sql-honey "SELECT * FROM t")))
+  (testing "Select * from a table"
+    (is (= {:select [:*], :from [:t]}
+           (get-sql-honey "SELECT * FROM t")))))
 
 (comment
-  (-> (sut/parse "SELECT 1")
-      (.accept x-statement-visitor (atom [])))
+  (sut/sql-honey "SELECT * FROM t")
+  ;; => {:select [:*], :from [:t]}
   #_|)
