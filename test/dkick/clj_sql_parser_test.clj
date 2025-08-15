@@ -22,9 +22,15 @@
     (is (= {:select [1]} (get-sql-honey "SELECT 1"))))
   (testing "Select * from a table"
     (is (= {:select [:*], :from [:t]}
-           (get-sql-honey "SELECT * FROM t")))))
+           (get-sql-honey "SELECT * FROM t"))))
+  (testing "Select colum from a table"
+    (is (= {:select [:a], :from [:t]}
+           (get-sql-honey "SELECT a FROM t"))))
+  (testing "Select columns from tables"
+    (is (= {:select [:a :b], :from [:t :u]}
+           (get-sql-honey "SELECT a, b FROM t, u")))))
 
 (comment
-  (sut/sql-honey "SELECT * FROM t")
+  (sut/sql-honey "SELECT a, b FROM t, u")
   ;; => {:select [:*], :from [:t]}
   #_|)

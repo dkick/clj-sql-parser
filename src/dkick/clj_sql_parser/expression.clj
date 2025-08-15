@@ -2,8 +2,9 @@
   (:require
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (net.sf.jsqlparser.statement.select AllColumns)
-   (net.sf.jsqlparser.expression ExpressionVisitorAdapter LongValue)))
+   (net.sf.jsqlparser.expression ExpressionVisitorAdapter LongValue)
+   (net.sf.jsqlparser.schema Column)
+   (net.sf.jsqlparser.statement.select AllColumns)))
 
 (defmulti -visit multifn/visit-group)
 
@@ -12,8 +13,10 @@
   (assert (-> sql-parsed .getReplaceExpressions seq nil?))
   (swap! context conj :*))
 
-(defmethod -visit LongValue
-  [sql-parsed context]
+(defmethod -visit Column [sql-parsed context]
+  (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
+
+(defmethod -visit LongValue [sql-parsed context]
   (swap! context conj (.getValue sql-parsed)))
 
 (defn expression-visitor []
