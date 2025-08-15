@@ -1,11 +1,10 @@
 (ns dkick.clj-sql-parser.statement.select.pivot
   (:require
-   #_[dkick.clj-sql-parser.expression :refer [expression-visitor]]
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
    (net.sf.jsqlparser.statement.select PivotVisitorAdapter)))
 
-(defmulti -visit multifn/visit-group)
+(defmulti -visit multifn/visit-context-group)
 
 (defn pivot-visitor [expression-visitor]
   (proxy [PivotVisitorAdapter] [expression-visitor]

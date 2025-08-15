@@ -6,7 +6,7 @@
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select AllColumns)))
 
-(defmulti -visit multifn/visit-group)
+(defmulti -visit multifn/visit-context-group)
 
 (defmethod -visit AllColumns [sql-parsed context]
   (assert (-> sql-parsed .getExceptColumns seq nil?))

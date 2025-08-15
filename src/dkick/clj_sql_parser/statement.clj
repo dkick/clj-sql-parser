@@ -7,13 +7,12 @@
    [dkick.clj-sql-parser.statement.select.from-item
     :refer [from-item-visitor]]
    [dkick.clj-sql-parser.statement.select.select-item
-    :refer [select-item-visitor]]
-   [honey.sql.helpers :as sqh])
+    :refer [select-item-visitor]])
   (:import
    (net.sf.jsqlparser.statement StatementVisitorAdapter)
    (net.sf.jsqlparser.statement.select PlainSelect)))
 
-(defmulti -visit multifn/visit-group)
+(defmulti -visit multifn/visit-context-group)
 
 (defmethod -visit PlainSelect [_ _])
 
@@ -43,7 +42,3 @@
        (let [[car cdr] @context]
          (assert (nil? cdr))
          car)))))
-
-(comment
-  (visitors)
-  #_|)

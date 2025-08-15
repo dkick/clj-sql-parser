@@ -22,12 +22,16 @@
 (defmulti sql-honey type)
 
 (defmethod sql-honey String [s]
+  ;; Unfortunately the Java interop makes it difficult to avoid using
+  ;; an atom
   (let [context (atom [])]
     (-> s
         parse
         (.accept x-statement-visitor context))))
 
 (defmethod sql-honey Statement [x]
+  ;; Unfortunately the Java interop makes it difficult to avoid using
+  ;; an atom
   (let [context (atom [])]
     (.accept x x-statement-visitor context)))
 
@@ -38,11 +42,11 @@
   ;; to access protected members: setUseClassName,
   ;; setUseIdentityHashCode. JSON_STYLE, which we want, is not
   ;; recursive. Mixing MRTSS and JSON_STYLE is not an option.
-  (let [style   (doto (MultilineRecursiveToStringStyle.)
+  (let [#_#_style   (doto (MultilineRecursiveToStringStyle.)
                   #_(.setUseClassName true)
                   #_(.setUseIdentityHashCode false)
                   (ToStringBuilder/setDefaultStyle))
-        #_#_style (ToStringStyle/JSON_STYLE)
+        style (ToStringStyle/JSON_STYLE)
         builder (ReflectionToStringBuilder. statement style)]
     (.build builder)))
 

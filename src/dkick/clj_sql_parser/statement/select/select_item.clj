@@ -1,18 +1,17 @@
 (ns dkick.clj-sql-parser.statement.select.select-item
   (:require
    [dkick.clj-sql-parser.multifn :as multifn]
+   [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.statement.select
     SelectItem SelectItemVisitorAdapter)))
 
-(defmulti -visit multifn/visit-group)
+(defmulti -visit multifn/visit-context-group)
 
-(defmethod -visit SelectItem [sql-parsed context]
-  (swap! context
-         #(cond
-            (seq %) (conj (pop %) (sqh/select (peek %)))
-            :else   %)))
+(defmethod -visit SelectItem [_ context]
+  #t _
+  (swap! context (poke sqh/select)))
 
 (defn select-item-visitor [expression-visitor]
   (proxy [SelectItemVisitorAdapter] [expression-visitor]

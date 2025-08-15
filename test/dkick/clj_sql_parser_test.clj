@@ -3,7 +3,10 @@
    [clojure.test :refer [deftest is testing]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]))
+   [honey.sql :as sql]
+   [honey.sql.helpers :as sqh])
+  (:import
+   (com.google.gson Gson)))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -28,9 +31,23 @@
            (get-sql-honey "SELECT a FROM t"))))
   (testing "Select columns from tables"
     (is (= {:select [:a :b], :from [:t :u]}
-           (get-sql-honey "SELECT a, b FROM t, u")))))
+           (get-sql-honey "SELECT a, b FROM t, u"))))
+  ;; The recursion into the nested subquery isn't working
+  ;; here. Probably maybe because of how proxy-super works. Ugh! We
+  ;; might have to try gen-class after all
+  (testing "Select * from nested select *"
+    (get-sql-honey "select * from (select * from t)")))
 
 (comment
-  (sut/sql-honey "SELECT a, b FROM t, u")
-  ;; => {:select [:*], :from [:t]}
+  (-> (Gson.)
+      (.toJson (sut/parse "select * from t"))
+      println)
+
+  (-> (Gson.)
+      (.toJson (sut/parse "select * from (select * from t)"))
+      println)
+
+  (-> (sut/parse "select * from (select * from t)")
+      sut/sql->json
+      println)
   #_|)
