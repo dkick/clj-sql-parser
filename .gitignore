@@ -3,6 +3,7 @@
 .classpath
 .clj-kondo/.cache
 .cpcache
+.dir-locals.el
 .eastwood
 .factorypath
 .hg/

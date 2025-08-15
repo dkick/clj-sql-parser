@@ -1,11 +1,29 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.12.1"}}
+
+ :deps
+ {com.github.jsqlparser/jsqlparser {:mvn/version "5.4-SNAPSHOT"}
+  com.github.seancorfield/honeysql {:mvn/version "2.7.1340"}
+  org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
+
+  metosin/malli {:mvn/version "0.19.1"}
+
+  org.clojure/clojure {:mvn/version "1.12.1"}}
+
  :aliases
  {:test
   {:extra-paths ["test"]
-   :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
-                io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}}
-  :build {:deps {io.github.clojure/tools.build
-                 {:mvn/version "0.10.10"}
-                 slipset/deps-deploy {:mvn/version "0.2.2"}}
-          :ns-default build}}}
+
+   :extra-deps
+   {org.clojure/test.check {:mvn/version "1.1.1"}
+
+    io.github.cognitect-labs/test-runner
+    {:git/tag "v0.5.1" :git/sha "dfb30dd"}}}
+
+  :build
+  {:deps
+   {io.github.clojure/tools.build {:mvn/version "0.10.10"}
+
+    metosin/malli       {:mvn/version "0.19.1"}
+    slipset/deps-deploy {:mvn/version "0.2.2"}}
+
+   :ns-default build}}}

@@ -1,6 +1,38 @@
-(ns dkick.clj-sql-parser)
+(ns dkick.clj-sql-parser
+  (:import
+   (java.util.function Consumer)
+   (net.sf.jsqlparser.parser CCJSqlParser CCJSqlParserUtil)
+   (net.sf.jsqlparser.statement Statement)
+   (org.apache.commons.lang3.builder
+    MultilineRecursiveToStringStyle ReflectionToStringBuilder
+    ToStringBuilder ToStringStyle)))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (prn x "Hello, World!"))
+(defn parse
+  ([s]
+   (let [c (reify Consumer
+             (accept [_ parser]
+               (.withAllowComplexParsing ^CCJSqlParser parser)))]
+     (parse s ^Consumer c)))
+  ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
+
+(defmulti sql->json type)
+
+(defmethod sql->json Statement [statement]
+  ;; Java is making our lifes difficult here. MRTSS needs to sublcass
+  ;; to access protected members: setUseClassName,
+  ;; setUseIdentityHashCode. JSON_STYLE, which we want, is not
+  ;; recursive. Mixing MRTSS and JSON_STYLE is not an option.
+  (let [style   (doto (MultilineRecursiveToStringStyle.)
+                  #_(.setUseClassName true)
+                  #_(.setUseIdentityHashCode false)
+                  (ToStringBuilder/setDefaultStyle))
+        #_#_style (ToStringStyle/JSON_STYLE)
+        builder (ReflectionToStringBuilder. statement style)]
+    (.build builder)))
+
+(comment
+  (.setUseClassName (MultilineRecursiveToStringStyle.) true)
+  #_|)
+
+(defmethod sql->json String [s]
+  (sql->json (parse s)))
