@@ -1,6 +1,5 @@
-(ns dkick.clj-sql-parser.select
+(ns dkick.clj-sql-parser.statement.select
   (:require
-   [dkick.clj-sql-parser.expression :refer [expression-visitor]]
    [dkick.clj-sql-parser.multifn :as multifn]
    [honey.sql.helpers :as sqh])
   (:import
@@ -12,10 +11,11 @@
 (defmethod -visit PlainSelect [_ context]
   (swap! context (fn [$] [(apply sqh/select $)])))
 
-#_(defmethod -visit PlainSelect [_ _])
-
-(def select-visitor
-  (proxy [SelectVisitorAdapter] [expression-visitor]
+(defn select-visitor
+  [expression-visitor pivot-visitor select-item-visitor from-item-visitor]
+  (proxy [SelectVisitorAdapter]
+      [expression-visitor pivot-visitor
+       select-item-visitor from-item-visitor]
     (visit [sql-parsed context]
       (when sql-parsed
         (proxy-super visit sql-parsed context)

@@ -10,7 +10,7 @@
   [sql-parsed context]
   (swap! context conj (.getValue sql-parsed)))
 
-(def expression-visitor
+(defn expression-visitor []
   (proxy [ExpressionVisitorAdapter] []
     (visit [sql-parsed context]
       (when sql-parsed
