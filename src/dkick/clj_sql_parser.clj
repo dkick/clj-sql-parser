@@ -1,11 +1,11 @@
 (ns dkick.clj-sql-parser
   (:require
-   [dkick.clj-sql-parser.expression :refer [expression-visitor]]
    [dkick.clj-sql-parser.statement.select :refer [select-visitor]]
    [dkick.clj-sql-parser.statement.select.pivot :refer [pivot-visitor]]
    [dkick.clj-sql-parser.statement.select.select-item
     :refer [select-item-visitor]])
   (:import
+   (dkick.clj_sql_parser ExpressionVisitorAdapter)
    (dkick.clj_sql_parser StatementVisitorAdapter)
    (dkick.clj_sql_parser.statement.select FromItemVisitorAdapter)
    (java.util.function Consumer)
@@ -24,7 +24,7 @@
   ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
 
 (defn visitors []
-  (let [ev  (expression-visitor)
+  (let [ev  (ExpressionVisitorAdapter.)
         pv  (pivot-visitor ev)
         siv (select-item-visitor ev)
         fiv (FromItemVisitorAdapter. ev)
@@ -68,7 +68,7 @@
                   #_(.setUseClassName true)
                   #_(.setUseIdentityHashCode false)
                   (ToStringBuilder/setDefaultStyle))
-        style (ToStringStyle/JSON_STYLE)
+        style ToStringStyle/JSON_STYLE
         builder (ReflectionToStringBuilder. statement style)]
     (.build builder)))
 

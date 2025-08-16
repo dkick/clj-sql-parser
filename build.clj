@@ -38,7 +38,8 @@
    :pom-data  (pom-template version)
 
    :ns-compile
-   '[dkick.clj-sql-parser.StatementVisitorAdapter
+   '[dkick.clj-sql-parser.ExpressionVisitorAdapter
+     dkick.clj-sql-parser.StatementVisitorAdapter
      dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter]))
 
 (defn aot
@@ -46,7 +47,7 @@
   [opts]
   (b/delete {:path "target"})
   (let [opts (jar-opts opts)]
-    (println "\nCompiling " (:ns-compile opts) "...")
+    (println "\nCompiling" (:ns-compile opts) "...")
     (b/compile-clj opts)))
 
 (defn test
