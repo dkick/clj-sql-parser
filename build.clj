@@ -40,7 +40,8 @@
    :ns-compile
    '[dkick.clj-sql-parser.ExpressionVisitorAdapter
      dkick.clj-sql-parser.StatementVisitorAdapter
-     dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter]))
+     dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter
+     dkick.clj-sql-parser.statement.select.PivotVisitorAdapter]))
 
 (defn aot
   "AOT compile for gen-class"
