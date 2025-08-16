@@ -2,7 +2,7 @@
   (:require
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (net.sf.jsqlparser.expression ExpressionVisitorAdapter LongValue)
+   (net.sf.jsqlparser.expression LongValue)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select AllColumns)))
 
@@ -23,10 +23,3 @@
 (defmethod visit-after LongValue [sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
 
-#_(defn expression-visitor []
-  (proxy [ExpressionVisitorAdapter] []
-    (visit [sql-parsed context]
-      (when sql-parsed
-        (proxy-super visit sql-parsed context)
-        (visit-after sql-parsed context))
-      context)))
