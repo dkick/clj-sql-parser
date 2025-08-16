@@ -1,7 +1,13 @@
 (ns dkick.clj-sql-parser
   (:require
-   [dkick.clj-sql-parser.statement :refer [statement-visitor]])
+   [dkick.clj-sql-parser.expression :refer [expression-visitor]]
+   [dkick.clj-sql-parser.statement.select :refer [select-visitor]]
+   [dkick.clj-sql-parser.statement.select.pivot :refer [pivot-visitor]]
+   [dkick.clj-sql-parser.statement.select.select-item
+    :refer [select-item-visitor]])
   (:import
+   (dkick.clj_sql_parser StatementVisitorAdapter)
+   (dkick.clj_sql_parser.statement.select FromItemVisitorAdapter)
    (java.util.function Consumer)
    (net.sf.jsqlparser.parser CCJSqlParser CCJSqlParserUtil)
    (net.sf.jsqlparser.statement Statement)
@@ -16,6 +22,22 @@
                (.withAllowComplexParsing ^CCJSqlParser parser)))]
      (parse s ^Consumer c)))
   ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
+
+(defn visitors []
+  (let [ev  (expression-visitor)
+        pv  (pivot-visitor ev)
+        siv (select-item-visitor ev)
+        fiv (FromItemVisitorAdapter. ev)
+        sv  (select-visitor ev pv siv fiv)]
+    {:expression-visitor  (doto ev (.setSelectVisitor sv))
+     :from-item-visitor   (doto fiv (.setSelectVisitor sv))
+     :pivot-visitor       pv
+     :select-item-visitor siv
+     :select-visitor      sv}))
+
+(defn statement-visitor
+  ([] (statement-visitor (:select-visitor (visitors))))
+  ([select-visitor] (StatementVisitorAdapter. select-visitor)))
 
 (def x-statement-visitor (statement-visitor))
 

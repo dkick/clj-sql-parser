@@ -1,9 +1,8 @@
-(ns dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter
+(ns dkick.clj-sql-parser.StatementVisitorAdapter
   (:require
-   [dkick.clj-sql-parser.statement.select.from-item
-    :refer [visit-after visit-before]])
+   [dkick.clj-sql-parser.statement :refer [visit-after visit-before]])
   (:gen-class
-   :extends net.sf.jsqlparser.statement.select.FromItemVisitorAdapter
+   :extends net.sf.jsqlparser.statement.StatementVisitorAdapter
    :exposes-methods {visit visitSuper}))
 
 (defn -visit [this sql-parsed context]
@@ -11,4 +10,6 @@
     (let [subcontext (visit-before sql-parsed context)]
       (.visitSuper this sql-parsed subcontext)
       (visit-after sql-parsed context subcontext)))
-  context)
+  (let [[car & cdr] @context]
+    (assert (nil? cdr))
+    car))

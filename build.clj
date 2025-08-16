@@ -38,7 +38,8 @@
    :pom-data  (pom-template version)
 
    :ns-compile
-   '[dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter]))
+   '[dkick.clj-sql-parser.StatementVisitorAdapter
+     dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter]))
 
 (defn aot
   "AOT compile for gen-class"

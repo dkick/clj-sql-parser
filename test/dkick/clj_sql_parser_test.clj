@@ -3,8 +3,7 @@
    [clojure.test :refer [deftest is testing]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]
-   [honey.sql.helpers :as sqh])
+   [honey.sql :as sql])
   (:import
    (com.google.gson Gson)))
 
@@ -49,6 +48,8 @@
 
   (sut/sql-honey "select * from (select * from t)")
 
+  (sut/sql-honey "select 1")
+  
   (-> (sut/parse "select * from (select * from t)")
       sut/sql->json
       println)

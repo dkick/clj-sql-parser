@@ -1,43 +1,13 @@
 (ns dkick.clj-sql-parser.statement
   (:require
-   [dkick.clj-sql-parser.expression :refer [expression-visitor]]
-   [dkick.clj-sql-parser.multifn :as multifn]
-   [dkick.clj-sql-parser.statement.select :refer [select-visitor]]
-   [dkick.clj-sql-parser.statement.select.pivot :refer [pivot-visitor]]
-   [dkick.clj-sql-parser.statement.select.select-item
-    :refer [select-item-visitor]])
+   [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (dkick.clj_sql_parser.statement.select FromItemVisitorAdapter)
-   (net.sf.jsqlparser.statement StatementVisitorAdapter)
    (net.sf.jsqlparser.statement.select PlainSelect)))
 
-(defmulti -visit multifn/visit-context-group)
+(defmulti visit-after multifn/visit-subcontext-group)
+(defmulti visit-before multifn/visit-context-group)
 
-(defmethod -visit PlainSelect [_ _])
+(defmethod visit-before Object [_ context]
+  context)
 
-(defn visitors []
-  (let [ev  (expression-visitor)
-        pv  (pivot-visitor ev)
-        siv (select-item-visitor ev)
-        fiv (FromItemVisitorAdapter. ev)
-        sv  (select-visitor ev pv siv fiv)]
-    {:expression-visitor  (doto ev (.setSelectVisitor sv))
-     :from-item-visitor   (doto fiv (.setSelectVisitor sv))
-     :pivot-visitor       pv
-     :select-item-visitor siv
-     :select-visitor      sv}))
-
-(defn statement-visitor
-  ([]
-   (let [{:keys [select-visitor]}
-         (visitors)]
-     (statement-visitor select-visitor)))
-  ([select-visitor]
-   (proxy [StatementVisitorAdapter] [select-visitor]
-     (visit [sql-parsed context]
-       (when sql-parsed
-         (proxy-super visit sql-parsed context)
-         (-visit sql-parsed context))
-       (let [[car cdr] @context]
-         (assert (nil? cdr))
-         car)))))
+(defmethod visit-after PlainSelect [_ _ _])
