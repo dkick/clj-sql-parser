@@ -1,9 +1,8 @@
 (ns dkick.clj-sql-parser
-  (:require
-   [dkick.clj-sql-parser.statement.select :refer [select-visitor]])
   (:import
    (dkick.clj_sql_parser ExpressionVisitorAdapter)
    (dkick.clj_sql_parser StatementVisitorAdapter)
+   (dkick.clj_sql_parser.statement SelectVisitorAdapter)
    (dkick.clj_sql_parser.statement.select
     FromItemVisitorAdapter PivotVisitorAdapter SelectItemVisitorAdapter)
    (java.util.function Consumer)
@@ -26,7 +25,7 @@
         pv  (PivotVisitorAdapter. ev)
         siv (SelectItemVisitorAdapter. ev)
         fiv (FromItemVisitorAdapter. ev)
-        sv  (select-visitor ev pv siv fiv)]
+        sv  (SelectVisitorAdapter. ev pv siv fiv)]
     {:expression-visitor  (doto ev (.setSelectVisitor sv))
      :from-item-visitor   (doto fiv (.setSelectVisitor sv))
      :pivot-visitor       pv

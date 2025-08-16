@@ -40,6 +40,7 @@
    :ns-compile
    '[dkick.clj-sql-parser.ExpressionVisitorAdapter
      dkick.clj-sql-parser.StatementVisitorAdapter
+     dkick.clj-sql-parser.statement.SelectVisitorAdapter
      dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter
      dkick.clj-sql-parser.statement.select.PivotVisitorAdapter
      dkick.clj-sql-parser.statement.select.SelectItemVisitorAdapter]))

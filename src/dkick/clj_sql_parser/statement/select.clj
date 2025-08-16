@@ -2,15 +2,18 @@
   (:require
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (net.sf.jsqlparser.statement.select
-    PlainSelect SelectVisitorAdapter)))
+   (net.sf.jsqlparser.statement.select PlainSelect)))
 
-(defmulti visit-after multifn/visit-context-group)
+(defmulti visit-after multifn/visit-subcontext-group)
+(defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-after PlainSelect [_ context]
+(defmethod visit-before Object [_ context]
+  context)
+
+(defmethod visit-after PlainSelect [_ context _]
   (swap! context (fn [x] [(apply merge-with into x)])))
 
-(defn select-visitor
+#_(defn select-visitor
   [expression-visitor pivot-visitor select-item-visitor from-item-visitor]
   (proxy [SelectVisitorAdapter]
       [expression-visitor pivot-visitor
