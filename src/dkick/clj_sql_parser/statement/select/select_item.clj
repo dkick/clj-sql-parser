@@ -4,18 +4,13 @@
    [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
-   (net.sf.jsqlparser.statement.select
-    SelectItem SelectItemVisitorAdapter)))
+   (net.sf.jsqlparser.statement.select SelectItem)))
 
-(defmulti -visit multifn/visit-context-group)
+(defmulti visit-after multifn/visit-subcontext-group)
+(defmulti visit-before multifn/visit-context-group)
 
-(defmethod -visit SelectItem [_ context]
+(defmethod visit-before Object [_ context]
+  context)
+
+(defmethod visit-after SelectItem [_ context _]
   (swap! context (poke sqh/select)))
-
-(defn select-item-visitor [expression-visitor]
-  (proxy [SelectItemVisitorAdapter] [expression-visitor]
-    (visit [sql-parsed context]
-      (when sql-parsed
-        (proxy-super visit sql-parsed context)
-        (-visit sql-parsed context))
-      context)))

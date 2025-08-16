@@ -41,7 +41,8 @@
    '[dkick.clj-sql-parser.ExpressionVisitorAdapter
      dkick.clj-sql-parser.StatementVisitorAdapter
      dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter
-     dkick.clj-sql-parser.statement.select.PivotVisitorAdapter]))
+     dkick.clj-sql-parser.statement.select.PivotVisitorAdapter
+     dkick.clj-sql-parser.statement.select.SelectItemVisitorAdapter]))
 
 (defn aot
   "AOT compile for gen-class"
