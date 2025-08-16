@@ -23,4 +23,3 @@
   (let [x (.getFullyQualifiedName sql-parsed)]
     (assert (= x (.toString sql-parsed)))
     (swap! context conj (-> x keyword sqh/from))))
-

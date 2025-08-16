@@ -54,9 +54,9 @@
   (let [context (atom [])]
     (.accept x x-statement-visitor context)))
 
-(defmulti sql->json type)
+(defmulti sql-json type)
 
-(defmethod sql->json Statement [statement]
+(defmethod sql-json Statement [statement]
   ;; Java is making our lifes difficult here. MRTSS needs to sublcass
   ;; to access protected members: setUseClassName,
   ;; setUseIdentityHashCode. JSON_STYLE, which we want, is not
@@ -73,5 +73,5 @@
   (.setUseClassName (MultilineRecursiveToStringStyle.) true)
   #_|)
 
-(defmethod sql->json String [s]
-  (sql->json (parse s)))
+(defmethod sql-json String [s]
+  (sql-json (parse s)))

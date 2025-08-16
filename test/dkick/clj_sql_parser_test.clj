@@ -57,6 +57,6 @@
   (sut/sql-honey "select 1")
   
   (-> (sut/parse "select * from (select * from t)")
-      sut/sql->json
+      sut/sql-json
       println)
   #_|)
