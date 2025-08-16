@@ -1,4 +1,4 @@
-{:paths ["src" "resources"]
+{:paths ["src" "target/classes" "resources"]
 
  :deps
  {com.github.jsqlparser/jsqlparser {:mvn/version "5.4-SNAPSHOT"}

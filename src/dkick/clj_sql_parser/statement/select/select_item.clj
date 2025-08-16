@@ -10,7 +10,6 @@
 (defmulti -visit multifn/visit-context-group)
 
 (defmethod -visit SelectItem [_ context]
-  #t _
   (swap! context (poke sqh/select)))
 
 (defn select-item-visitor [expression-visitor]

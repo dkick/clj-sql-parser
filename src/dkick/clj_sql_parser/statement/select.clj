@@ -8,8 +8,6 @@
 (defmulti visit-after multifn/visit-context-group)
 
 (defmethod visit-after PlainSelect [_ context]
-  #t _
-  #t (.getFromItem _)
   (swap! context (fn [x] [(apply merge-with into x)])))
 
 (defn select-visitor

@@ -32,11 +32,11 @@
   (testing "Select columns from tables"
     (is (= {:select [:a :b], :from [:t :u]}
            (get-sql-honey "SELECT a, b FROM t, u"))))
-  ;; The recursion into the nested subquery isn't working
-  ;; here. Probably maybe because of how proxy-super works. Ugh! We
-  ;; might have to try gen-class after all
   (testing "Select * from nested select *"
-    (get-sql-honey "select * from (select * from t)")))
+    (is (= {:select [:*]
+            :from   [[{:select [:*]
+                       :from   [:t]}]]}
+           (get-sql-honey "SELECT * FROM (SELECT * FROM t)")))))
 
 (comment
   (-> (Gson.)
@@ -46,6 +46,8 @@
   (-> (Gson.)
       (.toJson (sut/parse "select * from (select * from t)"))
       println)
+
+  (sut/sql-honey "select * from (select * from t)")
 
   (-> (sut/parse "select * from (select * from t)")
       sut/sql->json
