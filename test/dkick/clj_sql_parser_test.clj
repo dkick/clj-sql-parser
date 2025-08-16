@@ -21,21 +21,27 @@
 
 (deftest select-test
   (testing "Select a literal 1"
-    (is (= {:select [1]} (get-sql-honey "SELECT 1"))))
+    (is (= {:select [1]}
+           (get-sql-honey
+            "SELECT 1"))))
   (testing "Select * from a table"
     (is (= {:select [:*], :from [:t]}
-           (get-sql-honey "SELECT * FROM t"))))
+           (get-sql-honey
+            "SELECT * FROM t"))))
   (testing "Select colum from a table"
     (is (= {:select [:a], :from [:t]}
-           (get-sql-honey "SELECT a FROM t"))))
+           (get-sql-honey
+            "SELECT a FROM t"))))
   (testing "Select columns from tables"
     (is (= {:select [:a :b], :from [:t :u]}
-           (get-sql-honey "SELECT a, b FROM t, u"))))
+           (get-sql-honey
+            "SELECT a, b FROM t, u"))))
   (testing "Select * from nested select *"
     (is (= {:select [:*]
             :from   [[{:select [:*]
                        :from   [:t]}]]}
-           (get-sql-honey "SELECT * FROM (SELECT * FROM t)")))))
+           (get-sql-honey
+            "SELECT * FROM (SELECT * FROM t)")))))
 
 (comment
   (-> (Gson.)
