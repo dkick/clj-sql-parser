@@ -17,8 +17,7 @@
 (defmethod visit-after SelectItem [sql-parsed context _]
   (swap! context
          (poke #(let [-fn?  (-sql-fn? %)
-                      alias (some-> sql-parsed .getAliasName keyword)
-                      alias (when alias (keyword alias))]
+                      alias (some-> sql-parsed .getAliasName keyword)]
                   (sqh/select
                    (cond
                      alias [% alias]    ; also SQL fn w/ alias
