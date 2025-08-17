@@ -21,6 +21,6 @@
                       alias (when alias (keyword alias))]
                   (sqh/select
                    (cond
-                     alias [% alias]    ; also SQL fn alias
+                     alias [% alias]    ; also SQL fn w/ alias
                      -fn?  [%]          ; only SQL fn w/o alias
                      :else %))))))
