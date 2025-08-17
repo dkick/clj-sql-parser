@@ -3,7 +3,8 @@
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]))
+   [honey.sql :as sql]
+   [honey.sql.helpers :as sqh]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -46,6 +47,12 @@
           :from   [:t]}
          (get-sql-honey
           "SELECT COUNT(*) AS n FROM t")))
+  (is (= {:select [[[:<> [:COUNT :*] 0] :x]]
+          :from   [:t]}
+         (get-sql-honey
+          ;; Annoyingly, Honey SQL is turning a != into a <> so this
+          ;; testing method will only work with a <>
+          "SELECT COUNT(*) <> 0 AS x FROM t")))
   (is (= {:select [:*]
           :from   [[{:select [[[:COUNT :*]]]
                      :from   [:t]}]]}
@@ -53,9 +60,51 @@
           "SELECT * FROM (SELECT COUNT(*) FROM t)"))))
 
 (comment
-  (sut/sql-honey "SELECT a AS b FROM t AS u")
-  ;; => {:select [[:a :b]], :from [[:t :u]]}
-  ;; => {:select [[:a :b]], :from [[:t nil]]}
+  (-> (sqh/select [[:count :*] :n]))
+  ;; => {:select [[[:count :*] :n]]}
+
+  (-> (sut/sql-honey "SELECT COUNT(*) AS n FROM t"))
+  ;; => {:select [[[:COUNT :*] :n]], :from [:t]}
+
+  (-> (sut/sql-honey "SELECT COUNT(*) <> 0 AS x FROM t")
+      (sql/format {:inline true}))
+
+  (-> (sut/sql-honey "SELECT FOO AS A")
+      ;; => {:select [[:FOO :A]]}
+      (sql/format {:inline true}))
+  ;; => ["SELECT FOO AS A"]
+
+  (-> (sut/sql-honey "SELECT (COUNT(*)) AS A")
+      #_|)
+  ;; => Execution error (IllegalArgumentException) at dkick.clj-sql-parser.ExpressionVisitorAdapter/-visit (ExpressionVisitorAdapter.clj:12).
+  ;;    No method in multimethod 'visit-after' for dispatch value: class net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList
+
+  (-> (sut/sql-honey "SELECT FOO(A)")
+      ;; => {:select [[[:FOO :A]]]}
+      (sql/format {:inline true}))
+  ;; => ["SELECT FOO(A)"]
+
+  (-> (sut/sql-honey "SELECT FOO(A) AS A")
+      ;; => {:select [[[:FOO :A] :A]]}
+      (sql/format {:inline true}))
+  ;; => ["SELECT FOO(A) AS A"]
+
+  (-> (sut/sql-honey
+       "SELECT FOO(a) <> BAR(c) FROM t")
+      (sql/format {:inline true}))
+
+  (-> (sqh/select [:foo :a] [:bar :b])
+      (sql/format {:inline true}))
+  ;; => ["SELECT foo AS a, bar AS b"]
+
+  (-> (sqh/select [[:foo :a]] [[:foo :b]])
+      (sql/format {:inline true}))
+  ;; => ["SELECT FOO(a), FOO(b)"]
+
+  (-> (sqh/select [[:<> [:foo :a] [:foo :b]] :c])
+      (sqh/from :t)
+      (sql/format {:inline true}))
+  ;; => ["SELECT FOO(a) <> FOO(b) AS c FROM t"]
 
   (def s
     "

@@ -9,21 +9,17 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ context]
-  context)
+(defmethod visit-before Object [_ context] context)
+
+(defn -sql-fn? [x]
+  (= (type x) :sql-fn))
 
 (defmethod visit-after SelectItem [sql-parsed context _]
   (swap! context
-         (poke #(let [alias (.getAliasName sql-parsed)]
+         (poke #(let [alias (.getAliasName sql-parsed)
+                      alias (when alias (keyword alias))]
                   (sqh/select
                    (cond
-                     (nil? alias) %
-                     (vector? %)  (conj % (keyword alias))
-                     (simple? %)  [% (keyword alias)]
-                     :else        (throw
-                                   (ex-info
-                                    "Unknown SeleteItem context"
-                                    {:%          %
-                                     :alias      alias
-                                     :sql-parsed sql-parsed
-                                     :context    context}))))))))
+                     alias        [% alias]
+                     (-sql-fn? %) [%]
+                     :else        %))))))

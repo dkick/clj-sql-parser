@@ -9,11 +9,9 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ context]
-  context)
+(defmethod visit-before Object [_ context] context)
 
-(defmethod visit-before ParenthesedSelect [_ _]
-  (atom []))
+(defmethod visit-before ParenthesedSelect [_ _] (atom []))
 
 (defmethod visit-after ParenthesedSelect [_ context subcontext]
   (swap! context conj
