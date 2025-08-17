@@ -1,12 +1,9 @@
 (ns dkick.clj-sql-parser-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]
-   [honey.sql.helpers :as sqh])
-  (:import
-   (com.google.gson Gson)))
+   [honey.sql :as sql]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -56,35 +53,6 @@
           "SELECT * FROM (SELECT COUNT(*) FROM t)"))))
 
 (comment
-  (sut/sql-honey "SELECT a AS b FROM t")
-
-  (-> (sut/sql-honey "SELECT COUNT(*) AS n FROM t")
-      ;; => {:select [[[[:COUNT :*]] :n]], :from [:t]}
-      (sql/format {:inline true}))
-
-  (-> (sut/sql-honey "SELECT COUNT(*) FROM t")
-      ;; => {:select [[[:COUNT :*]]], :from [:t]}
-      (sql/format {:inline true}))
-
-  (-> {:select [[[:COUNT :*] :n]], :from [:t]}
-      (sql/format {:inline true}))
-
-  (-> (Gson.)
-      (.toJson (sut/parse "select * from t"))
-      println)
-
-  (-> (Gson.)
-      (.toJson (sut/parse "select * from (select * from t)"))
-      println)
-
-  (sut/sql-honey "select * from (select * from t)")
-
-  (sut/sql-honey "select 1")
-
-  (-> (sut/parse "select * from (select * from t)")
-      sut/sql-json
-      println)
-
   (def s
     "
     select
