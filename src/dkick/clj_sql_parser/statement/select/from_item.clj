@@ -12,8 +12,7 @@
 (defmethod visit-before Object [_ context]
   context)
 
-(defmethod visit-before ParenthesedSelect [_ _]
-  (atom []))
+(defmethod visit-before ParenthesedSelect [_ _] (atom []))
 
 (defmethod visit-after ParenthesedSelect [_ context subcontext]
   (swap! context conj

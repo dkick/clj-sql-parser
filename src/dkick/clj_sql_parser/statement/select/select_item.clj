@@ -12,5 +12,18 @@
 (defmethod visit-before Object [_ context]
   context)
 
-(defmethod visit-after SelectItem [_ context _]
-  (swap! context (poke sqh/select)))
+(defmethod visit-after SelectItem [sql-parsed context _]
+  (swap! context
+         (poke #(let [alias (.getAliasName sql-parsed)]
+                  (sqh/select
+                   (cond
+                     (nil? alias) %
+                     (vector? %)  (conj % (keyword alias))
+                     (keyword? %) [% (keyword alias)]
+                     :else        (throw
+                                   (ex-info
+                                    "Unknown SeleteItem context"
+                                    {:sql-parsed sql-parsed
+                                     :context    context
+                                     :%          %
+                                     :alias      alias}))))))))

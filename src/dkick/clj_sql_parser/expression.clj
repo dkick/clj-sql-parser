@@ -2,7 +2,7 @@
   (:require
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (net.sf.jsqlparser.expression LongValue)
+   (net.sf.jsqlparser.expression Function LongValue)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select AllColumns)))
 
@@ -19,6 +19,12 @@
 
 (defmethod visit-after Column [sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
+
+(defmethod visit-before Function [_ _] (atom []))
+
+(defmethod visit-after Function [sql-parsed context subcontext]
+  (swap! context conj
+         [(apply conj [(-> sql-parsed .getName keyword)] @subcontext)]))
 
 (defmethod visit-after LongValue [sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
