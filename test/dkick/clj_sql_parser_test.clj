@@ -27,9 +27,9 @@
   (is (= {:select [:a], :from [:t]}
          (get-sql-honey
           "SELECT a FROM t")))
-  (is (= {:select [[:a :b]], :from [:t]}
+  (is (= {:select [[:a :b]], :from [[:t :u]]}
          (get-sql-honey
-          "SELECT a AS b FROM t")))
+          "SELECT a AS b FROM t AS u")))
   (is (= {:select [:a :b], :from [:t :u]}
          (get-sql-honey
           "SELECT a, b FROM t, u")))
@@ -53,6 +53,10 @@
           "SELECT * FROM (SELECT COUNT(*) FROM t)"))))
 
 (comment
+  (sut/sql-honey "SELECT a AS b FROM t AS u")
+  ;; => {:select [[:a :b]], :from [[:t :u]]}
+  ;; => {:select [[:a :b]], :from [[:t nil]]}
+
   (def s
     "
     select

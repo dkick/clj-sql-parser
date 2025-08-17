@@ -12,13 +12,17 @@
 (defmethod visit-before Object [_ context]
   context)
 
-(defmethod visit-before ParenthesedSelect [_ _] (atom []))
+(defmethod visit-before ParenthesedSelect [_ _]
+  (atom []))
 
 (defmethod visit-after ParenthesedSelect [_ context subcontext]
   (swap! context conj
          (sqh/from [(apply merge-with into @subcontext)])))
 
 (defmethod visit-after Table [sql-parsed context _]
-  (let [x (.getFullyQualifiedName sql-parsed)]
-    (assert (= x (.toString sql-parsed)))
-    (swap! context conj (-> x keyword sqh/from))))
+  (let [-name (keyword (.getFullyQualifiedName sql-parsed))
+        alias (.getAlias sql-parsed)]
+    (swap! context conj
+           (sqh/from (if-not alias
+                       -name
+                       [-name (-> alias .getName keyword)])))))

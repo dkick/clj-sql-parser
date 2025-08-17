@@ -1,7 +1,7 @@
 (ns dkick.clj-sql-parser.statement.select.select-item
   (:require
    [dkick.clj-sql-parser.multifn :as multifn]
-   [dkick.clj-sql-parser.olio :refer [poke]]
+   [dkick.clj-sql-parser.olio :refer [poke simple?]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.statement.select SelectItem)))
@@ -19,11 +19,11 @@
                    (cond
                      (nil? alias) %
                      (vector? %)  (conj % (keyword alias))
-                     (keyword? %) [% (keyword alias)]
+                     (simple? %)  [% (keyword alias)]
                      :else        (throw
                                    (ex-info
                                     "Unknown SeleteItem context"
-                                    {:sql-parsed sql-parsed
-                                     :context    context
-                                     :%          %
-                                     :alias      alias}))))))))
+                                    {:%          %
+                                     :alias      alias
+                                     :sql-parsed sql-parsed
+                                     :context    context}))))))))

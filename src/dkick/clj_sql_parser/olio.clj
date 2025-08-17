@@ -12,3 +12,6 @@
    (cond
      (seq xs) (conj (pop xs) (f (peek xs)))
      :else    xs)))
+
+(defn simple? [x]
+  (not (seqable? x)))
