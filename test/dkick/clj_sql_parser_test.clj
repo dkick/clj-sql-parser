@@ -104,5 +104,5 @@ from validation_errors
     ) dbt_internal_test
 ")
 
-  #t (sut/sql-honey s)
+  (sut/sql-honey s)
   #_|)
