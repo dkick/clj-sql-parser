@@ -8,7 +8,8 @@
 
 (defn -visit [this sql-parsed context]
   (when sql-parsed
-    (let [subcontext (visit-before sql-parsed context)]
+    (let [subcontext
+          (visit-before this sql-parsed context)]
       (.visitSuper this sql-parsed subcontext)
-      (visit-after sql-parsed context subcontext)))
+      (visit-after this sql-parsed context subcontext)))
   context)

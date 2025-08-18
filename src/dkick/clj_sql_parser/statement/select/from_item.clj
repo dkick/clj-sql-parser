@@ -9,15 +9,15 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ context] context)
+(defmethod visit-before Object [_ _ context] context)
 
-(defmethod visit-before ParenthesedSelect [_ _] (atom []))
+(defmethod visit-before ParenthesedSelect [_ _ _] (atom []))
 
-(defmethod visit-after ParenthesedSelect [_ context subcontext]
+(defmethod visit-after ParenthesedSelect [_ _ context subcontext]
   (swap! context conj
          (sqh/from [(apply merge-with into @subcontext)])))
 
-(defmethod visit-after Table [sql-parsed context _]
+(defmethod visit-after Table [_ sql-parsed context _]
   (let [-name (keyword (.getFullyQualifiedName sql-parsed))
         alias (.getAlias sql-parsed)]
     (swap! context conj

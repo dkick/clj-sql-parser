@@ -40,6 +40,9 @@
 
 (defmulti sql-honey type)
 
+(defn f-sql-honey [{:keys [x]}]
+  (sql-honey x))
+
 (defmethod sql-honey String [s]
   ;; Unfortunately the Java interop makes it difficult to avoid using
   ;; an atom

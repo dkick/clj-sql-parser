@@ -7,7 +7,7 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ context]
+(defmethod visit-before Object [_ _ context]
   context)
 
-(defmethod visit-after PlainSelect [_ _ _])
+(defmethod visit-after PlainSelect [_ _ _ _])

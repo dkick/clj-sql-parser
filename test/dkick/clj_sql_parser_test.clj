@@ -50,61 +50,26 @@
   (is (= {:select [[[:<> [:COUNT :*] 0] :x]]
           :from   [:t]}
          (get-sql-honey
-          ;; Annoyingly, Honey SQL is turning a != into a <> so this
-          ;; testing method will only work with a <>
+          ;; Annoyingly, Honey SQL format is turning a "!=" into
+          ;; a "<>" here so the testing method in get-sql-honey from
+          ;; reparse will only work with a "<>"
           "SELECT COUNT(*) <> 0 AS x FROM t")))
   (is (= {:select [:*]
           :from   [[{:select [[[:COUNT :*]]]
                      :from   [:t]}]]}
          (get-sql-honey
-          "SELECT * FROM (SELECT COUNT(*) FROM t)"))))
+          "SELECT * FROM (SELECT COUNT(*) FROM t)")))
+  (is (= {:select [:*]
+          :from   [:t]
+          :where  [:= :a 1]}
+         (get-sql-honey
+          "SELECT * FROM t WHERE a = 1"))))
 
 (comment
-  (-> (sqh/select [[:count :*] :n]))
-  ;; => {:select [[[:count :*] :n]]}
-
-  (-> (sut/sql-honey "SELECT COUNT(*) AS n FROM t"))
-  ;; => {:select [[[:COUNT :*] :n]], :from [:t]}
-
-  (-> (sut/sql-honey "SELECT COUNT(*) <> 0 AS x FROM t")
-      (sql/format {:inline true}))
-
-  (-> (sut/sql-honey "SELECT FOO AS A")
-      ;; => {:select [[:FOO :A]]}
-      (sql/format {:inline true}))
-  ;; => ["SELECT FOO AS A"]
-
   (-> (sut/sql-honey "SELECT (COUNT(*)) AS A")
-      #_|)
   ;; => Execution error (IllegalArgumentException) at dkick.clj-sql-parser.ExpressionVisitorAdapter/-visit (ExpressionVisitorAdapter.clj:12).
   ;;    No method in multimethod 'visit-after' for dispatch value: class net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList
-
-  (-> (sut/sql-honey "SELECT FOO(A)")
-      ;; => {:select [[[:FOO :A]]]}
-      (sql/format {:inline true}))
-  ;; => ["SELECT FOO(A)"]
-
-  (-> (sut/sql-honey "SELECT FOO(A) AS A")
-      ;; => {:select [[[:FOO :A] :A]]}
-      (sql/format {:inline true}))
-  ;; => ["SELECT FOO(A) AS A"]
-
-  (-> (sut/sql-honey
-       "SELECT FOO(a) <> BAR(c) FROM t")
-      (sql/format {:inline true}))
-
-  (-> (sqh/select [:foo :a] [:bar :b])
-      (sql/format {:inline true}))
-  ;; => ["SELECT foo AS a, bar AS b"]
-
-  (-> (sqh/select [[:foo :a]] [[:foo :b]])
-      (sql/format {:inline true}))
-  ;; => ["SELECT FOO(a), FOO(b)"]
-
-  (-> (sqh/select [[:<> [:foo :a] [:foo :b]] :c])
-      (sqh/from :t)
-      (sql/format {:inline true}))
-  ;; => ["SELECT FOO(a) <> FOO(b) AS c FROM t"]
+      #_|)
 
   (def s
     "
@@ -125,5 +90,36 @@ from validation_errors
     ) dbt_internal_test
 ")
 
-  (sut/sql-honey s)
+  (sut/sql-honey "
+select
+      count(*) as failures,
+      count(*) != 0 as should_warn,
+      count(*) != 0 as should_error
+from (
+    with validation_errors as (
+    select
+        cust_location_id
+    from (select *
+          from
+          `dev_bronze`.`dev_dkick_ftp2`.`vw_arss_customerdirectory_export`
+          where st_row_current = 1)
+         dbt_subquery
+         group by cust_location_id
+         having count(*) > 1
+    ) select * from validation_errors
+    ) dbt_internal_test")
+
+  (sut/sql-honey
+   "select * from t where a = 1")
+  ;; => {:select [:*], :from [:t], :where [:= :a 1]}
+
+  (let [context (atom [])]
+    (->
+     (sut/parse
+      "select *
+    from `dev_bronze`.`dev_dkick_ftp2`.`vw_arss_customerdirectory_export`
+    where st_row_current = 1")
+     #_.getWhere
+     (.accept (:expression-visitor (sut/visitors)) context)))
+  ;; => #<Atom@795d1559: [[:= :st_row_current 1]]>
   #_|)

@@ -9,14 +9,14 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ context] context)
+(defmethod visit-before Object [_ _ context] context)
 
-(defmethod visit-after AllColumns [sql-parsed context _]
+(defmethod visit-after AllColumns [_ sql-parsed context _]
   (assert (not (-> sql-parsed .getExceptColumns seq)))
   (assert (not (-> sql-parsed .getReplaceExpressions seq)))
   (swap! context conj :*))
 
-(defmethod visit-after BinaryExpression [sql-parsed context _]
+(defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
            (let [operator (-> sql-parsed .getStringExpression keyword)
@@ -26,17 +26,17 @@
                  context' (pop context')]
              (conj context' [operator left right])))))
 
-(defmethod visit-after Column [sql-parsed context _]
+(defmethod visit-after Column [_ sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
 
-(defmethod visit-before Function [_ _] (atom []))
+(defmethod visit-before Function [_ _ _] (atom []))
 
-(defmethod visit-after Function [sql-parsed context subcontext]
+(defmethod visit-after Function [_ sql-parsed context subcontext]
   (swap! context conj
          (with-meta
           (apply conj [(-> sql-parsed .getName keyword)] @subcontext)
           ;; This makes for an easy test in visit-after SelectItem
           {:type :sql-fn})))
 
-(defmethod visit-after LongValue [sql-parsed context _]
+(defmethod visit-after LongValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
