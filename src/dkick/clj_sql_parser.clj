@@ -54,6 +54,9 @@
   (let [context (atom [])]
     (.accept x x-statement-visitor context)))
 
+(defn print-sql-honey [{:keys [s]}]
+  (println (sql-honey s)))
+
 (defmulti sql-json type)
 
 (defmethod sql-json Statement [statement]
