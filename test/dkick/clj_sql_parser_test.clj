@@ -63,7 +63,21 @@
           :from   [:t]
           :where  [:= :a 1]}
          (get-sql-honey
-          "SELECT * FROM t WHERE a = 1"))))
+          "SELECT * FROM t WHERE a = 1")))
+  (is (= {:select   [:a],
+          :from     [[{:select [:*]
+                       :from   [:t]
+                       :where  [:= :b 1]}
+                      :subquery]],
+          :group-by [:a],
+          :having   [:> [:COUNT :*] 1]}
+         (get-sql-honey
+          ;; The "AS subquery" is optional but sql/format produces a
+          ;; string with it, so our test string uses it, too, so we
+          ;; can compare versions in reparse
+          (str "SELECT a FROM "
+               "(SELECT * FROM t WHERE b = 1) AS subquery "
+               "GROUP BY a HAVING COUNT(*) > 1")))))
 
 (comment
   (-> (sut/sql-honey "SELECT (COUNT(*)) AS A")
@@ -109,9 +123,10 @@ from (
     ) select * from validation_errors
     ) dbt_internal_test")
 
-  (sut/sql-honey
-   "select a
-    from (select * from t where st_row_current = 1) subquery
-    group by a
-    having count(*) > 1")
+  (-> (sut/sql-honey
+       "SELECT a
+        FROM (SELECT * FROM t WHERE b = 1) AS subquery
+        GROUP BY a
+        HAVING COUNT(*) > 1")
+      (sql/format {:inline true}))
   #_|)

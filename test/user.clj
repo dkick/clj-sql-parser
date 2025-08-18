@@ -1,8 +1,10 @@
 (ns user
   (:require
-    [clojure.java.io :as io]
-    [malli.dev :as m.dev]
-    [malli.dev.pretty :as m.dev.pretty]))
+   [clojure.java.io :as io]
+   [honey.sql :as sql]
+   [honey.sql.helpers :as sqh]
+   [malli.dev :as m.dev]
+   [malli.dev.pretty :as m.dev.pretty]))
 
 ;; This is a snippet that loads all user.clj's it can find.  If *file*
 ;; is nil, it means we are called recursively, do nothing.
@@ -28,3 +30,7 @@
   (m.dev/stop!))
 
 (start!)
+
+(comment
+  [::sql/_ ::sqh/_ #'stop!]
+  #__)

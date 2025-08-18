@@ -47,8 +47,6 @@
 
 (defmethod visit-after PlainSelect [that _ context subcontext]
   (peek @context)
-  ;; TODO: Process the original sql-parsed which had been pushed onto
-  ;; the original context
   (let [sql-parts          (peek @context)
         expression-visitor (.getExpressionVisitor that)]
     (swap! context pop)
@@ -61,7 +59,7 @@
       (let [having-context (atom [])]
         (.accept having-sql expression-visitor having-context)
         (assert (= (count @having-context) 1))
-        (swap! subcontext conj (sqh/having @having-context))))
+        (swap! subcontext conj (sqh/having (peek @having-context)))))
     (swap! subcontext (fn [x] [(apply merge-with into x)]))
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))
