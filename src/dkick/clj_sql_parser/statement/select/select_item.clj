@@ -4,7 +4,7 @@
    [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
-   (net.sf.jsqlparser.statement.select ParenthesedSelect SelectItem)))
+   (net.sf.jsqlparser.statement.select SelectItem)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -15,18 +15,14 @@
 (defn -sql-fn? [x]
   (= (type x) :sql-fn))
 
-(defmethod visit-before ParenthesedSelect [_ sql-parsed _]
-  [sql-parsed (atom [])])
-
-(defmethod visit-after ParenthesedSelect [_ _ context subcontext]
-  (swap! context conj (sqh/select [(apply merge-with into @subcontext)])))
-
 (defmethod visit-after SelectItem [_ sql-parsed context _]
+  ;; Check for metadata in the context which might have been set in
+  ;; ...statement.select/visit-before PlainSelect
   (swap! context
-         (poke #(let [-fn?  (-sql-fn? %)
-                      alias (some-> sql-parsed .getAliasName keyword)]
-                  (sqh/select
-                   (cond
-                     alias [% alias]    ; also SQL fn w/ alias
-                     -fn?  [%]          ; only SQL fn w/o alias
-                     :else %))))))
+           (poke #(let [-fn?   (-sql-fn? %)
+                        alias  (some-> sql-parsed .getAliasName keyword)]
+                    (sqh/select
+                     (cond
+                       alias [% alias]    ; also SQL fn w/ alias
+                       -fn?  [%]          ; only SQL fn w/o alias
+                       :else %))))))

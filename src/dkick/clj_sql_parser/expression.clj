@@ -4,7 +4,10 @@
    [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
-   (net.sf.jsqlparser.expression BinaryExpression Function LongValue)
+   (net.sf.jsqlparser.expression
+    BinaryExpression Function LongValue StringValue)
+   (net.sf.jsqlparser.expression.operators.relational
+    IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select AllColumns GroupByElement)))
 
@@ -45,5 +48,15 @@
 (defmethod visit-after GroupByElement [_ _ context _]
   (swap! context (poke #(sqh/group-by %))))
 
+(defmethod visit-after IsNullExpression [_ sql-parsed context _]
+  (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
+                          [op % nil]))))
+
+;;; We cannot quite believe that there is no base class for all of
+;;; these simple value types
+
 (defmethod visit-after LongValue [_ sql-parsed context _]
+  (swap! context conj (.getValue sql-parsed)))
+
+(defmethod visit-after StringValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
