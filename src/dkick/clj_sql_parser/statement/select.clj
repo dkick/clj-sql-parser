@@ -24,7 +24,6 @@
                        :offset  (.getOffset sql-parsed)
                        :fetch   (.getFetch sql-parsed)})
   ;; TODO: At the moment, we do not handle the following
-  (assert (nil? (:having (peek @context))))
   (assert (nil? (:qualify (peek @context))))
   (assert (nil? (:offset (peek @context))))
   (assert (nil? (:fetch (peek @context))))
@@ -44,13 +43,19 @@
   (peek @context)
   ;; TODO: Process the original sql-parsed which had been pushed onto
   ;; the original context
-  (let [sql-parts (peek @context)]
+  (let [sql-parts          (peek @context)
+        expression-visitor (.getExpressionVisitor that)]
     (swap! context pop)
-    (when-let [where (:where sql-parts)]
-      (let [where' (atom [])]
-        (.accept where (.getExpressionVisitor that) where')
-        (assert (= (count @where') 1))
-        (swap! subcontext conj (sqh/where (peek @where')))))
+    (when-let [where-sql (:where sql-parts)]
+      (let [where-context (atom [])]
+        (.accept where-sql expression-visitor where-context)
+        (assert (= (count @where-context) 1))
+        (swap! subcontext conj (sqh/where (peek @where-context)))))
+    (when-let [having-sql (:having sql-parts)]
+      (let [having-context (atom [])]
+        (.accept having-sql expression-visitor having-context)
+        (assert (= (count @having-context) 1))
+        (swap! subcontext conj (sqh/having @having-context))))
     (swap! subcontext (fn [x] [(apply merge-with into x)]))
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))

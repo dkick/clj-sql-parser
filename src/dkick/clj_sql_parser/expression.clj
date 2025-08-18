@@ -1,10 +1,12 @@
 (ns dkick.clj-sql-parser.expression
   (:require
-   [dkick.clj-sql-parser.multifn :as multifn])
+   [dkick.clj-sql-parser.multifn :as multifn]
+   [dkick.clj-sql-parser.olio :refer [poke]]
+   [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression BinaryExpression Function LongValue)
    (net.sf.jsqlparser.schema Column)
-   (net.sf.jsqlparser.statement.select AllColumns)))
+   (net.sf.jsqlparser.statement.select AllColumns GroupByElement)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -37,6 +39,9 @@
           (apply conj [(-> sql-parsed .getName keyword)] @subcontext)
           ;; This makes for an easy test in visit-after SelectItem
           {:type :sql-fn})))
+
+(defmethod visit-after GroupByElement [_ _ context _]
+  (swap! context (poke #(sqh/group-by %))))
 
 (defmethod visit-after LongValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
