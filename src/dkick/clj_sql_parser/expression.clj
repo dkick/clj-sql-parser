@@ -11,7 +11,8 @@
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
-(defmethod visit-before Object [_ _ context] context)
+(defmethod visit-before Object [_ sql-parsed context]
+  [sql-parsed context])
 
 (defmethod visit-after AllColumns [_ sql-parsed context _]
   (assert (not (-> sql-parsed .getExceptColumns seq)))
@@ -31,7 +32,8 @@
 (defmethod visit-after Column [_ sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
 
-(defmethod visit-before Function [_ _ _] (atom []))
+(defmethod visit-before Function [_ sql-parsed _]
+  [sql-parsed (atom [])])
 
 (defmethod visit-after Function [_ sql-parsed context subcontext]
   (swap! context conj

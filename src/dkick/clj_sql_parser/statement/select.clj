@@ -3,13 +3,19 @@
    [dkick.clj-sql-parser.multifn :as multifn]
    [honey.sql.helpers :as sqh])
   (:import
-   (net.sf.jsqlparser.statement.select PlainSelect)))
+   (net.sf.jsqlparser.statement.select ParenthesedSelect PlainSelect)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
 
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
+
+(defmethod visit-before ParenthesedSelect [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after ParenthesedSelect [_ _ context subcontext]
+  (swap! context conj (sqh/select [(apply merge-with into @subcontext)])))
 
 ;; The SelectVisitorAdapter visits the where clause as an Expression,
 ;; i.e. there is no derived type to distinguish it as a where clause,
