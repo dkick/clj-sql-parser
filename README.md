@@ -1,6 +1,6 @@
 # com.github.dkick/clj-sql-parser
 
-FIXME: my new library.
+Uses Java SQL Parser to transpile SQL into Honey SQL
 
 ## Usage
 
@@ -8,8 +8,8 @@ FIXME: write usage documentation!
 
 Invoke a library API function from the command-line:
 
-    $ clojure -X dkick.clj-sql-parser/foo :a 1 :b '"two"'
-    {:a 1, :b "two"} "Hello, World!"
+    $ clojure -X dkick.clj-sql-parser/print-sql-honey :s '"SELECT COUNT(*) <> 0 AS x FROM (SELECT a AS b FROM t AS u) WHERE x = 1"'
+    {:select [[[:<> [:COUNT :*] 0] :x]], :from [[{:select [[:a :b]], :from [[:t :u]]}]], :where [:= :x 1]}
 
 Run the project's tests (they'll fail until you edit them):
 
