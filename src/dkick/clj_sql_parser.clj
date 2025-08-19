@@ -74,9 +74,5 @@
         builder (ReflectionToStringBuilder. statement style)]
     (.build builder)))
 
-(comment
-  (.setUseClassName (MultilineRecursiveToStringStyle.) true)
-  #_|)
-
 (defmethod sql-json String [s]
   (sql-json (parse s)))

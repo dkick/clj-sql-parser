@@ -28,3 +28,6 @@
            (sqh/from (if-not alias
                        -name
                        [-name (-> alias .getName keyword)])))))
+
+#_(defn visit-joins [_that joins _context]
+  joins)

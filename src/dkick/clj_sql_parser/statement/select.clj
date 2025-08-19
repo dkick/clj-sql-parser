@@ -31,9 +31,7 @@
   ;; The SelectVisitorAdapter visits some of these clause as an
   ;; Expression, i.e. there is no derived type to distinguish it from
   ;; other types of expressions, which makes it rather hard to use for
-  ;; our purposes. Here we have to do work around this limitation by
-  ;; pulling out the ambiguous expressions to handle in the
-  ;; visit-after PlainSelect
+  ;; our purposes
   (swap! context conj {:where   (.getWhere sql-parsed)
                        :having  (.getHaving sql-parsed)
                        :qualify (.getQualify sql-parsed)
@@ -44,19 +42,15 @@
   (assert (nil? (:offset (peek @context))))
   (assert (nil? (:fetch (peek @context))))
 
-  ;; Remember the Distinct value so that we can process it in
-  ;; visit-after PlainSelect. The SelectVisitorAdapter superclass will
+  ;; The SelectVisitorAdapter superclass will
   ;; try to process
-  ;;
-  ;; (.. sql-parsed getDistinct getOnSelectItems)
-  ;;
+  ;;     (.. sql-parsed getDistinct getOnSelectItems)
   ;; without checking for a null value
   (swap! context
          (poke #(merge % {:distinct (.getDistinct sql-parsed)})))
 
   [;; Modify sql-parsed to remove the problematic parts. We will
-   ;; visit-after PlainSelect them later or pass the info in the
-   ;; -meta (see above) to be available in other visit-after methods
+   ;; visit-after PlainSelect them later
    (doto sql-parsed
      ;; Expressions without distinct types
      (.setWhere nil)
@@ -65,26 +59,21 @@
      (.setOffset nil)
      (.setFetch nil)
      ;; Distinct with null getOnSelectItems
-     (.setDistinct nil))
-
-   ;; Have the superclass visit method use a subcontext in order to
-   ;; not push anything on top of the original sql-parsed parts. These
-   ;; context atoms are simply pass-throughs for the Java code, so we
-   ;; use this to pass, for example, getDistinct to visit-after
-   ;; SelectItem
+     (.setDistinct nil)
+     ;; Work around SelectVisitorAdapter/.visitJoins
+     )
    (atom [])])
 
 (defmethod visit-after PlainSelect [that _ context subcontext]
-  (peek @context)
-  (let [sql-parts-unvisited (peek @context)
-        expression-visitor  (.getExpressionVisitor that)]
+  (let [sql-parts-delayed  (peek @context)
+        expression-visitor (.getExpressionVisitor that)]
     (swap! context pop)
-    (when-let [where-sql (:where sql-parts-unvisited)]
+    (when-let [where-sql (:where sql-parts-delayed)]
       (let [where-context (atom [])]
         (.accept where-sql expression-visitor where-context)
         (assert (= (count @where-context) 1))
         (swap! subcontext conj (sqh/where (peek @where-context)))))
-    (when-let [having-sql (:having sql-parts-unvisited)]
+    (when-let [having-sql (:having sql-parts-delayed)]
       (let [having-context (atom [])]
         (.accept having-sql expression-visitor having-context)
         (assert (= (count @having-context) 1))
@@ -92,7 +81,7 @@
     (swap! subcontext
            (fn [x]
              [(cond-> (apply merge-with into x)
-                (:distinct sql-parts-unvisited)
+                (:distinct sql-parts-delayed)
                 (set/rename-keys {:select :select-distinct}))]))
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))

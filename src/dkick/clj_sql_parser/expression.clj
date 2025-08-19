@@ -52,6 +52,13 @@
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
                           [op % nil]))))
 
+(defmethod visit-before ParenthesedExpressionList [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after ParenthesedExpressionList
+  [_ _ context subcontext]
+  (swap! context conj [@subcontext]))
+
 ;;; We cannot quite believe that there is no base class for all of
 ;;; these simple value types
 

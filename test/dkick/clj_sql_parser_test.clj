@@ -140,6 +140,15 @@ WHERE dc.st_row_current = 1
   AND dc.cc_company = '<NA>'")
 
   (sut/sql-honey sql-str)
+  
+  (->> (-> (sut/parse sql-str)
+           .getJoins)
+       (mapv (fn [x] {:from-item (.getFromItem x)
+                     :on-expressions (.getOnExpressions x)})))
+  ;; => ({:from-item
+  ;;      #object[net.sf.jsqlparser.schema.Table 0x37540736 "`dev_silver`.`dev_dkick_facts`.`fact_orders` AS fo"],
+  ;;      :on-expressions
+  ;;      (#object[net.sf.jsqlparser.expression.operators.conditional.AndExpression 0x774b0b3d "fo.order_costcenter_key = dc.costcenter_key AND fo.st_row_current = 1"])})
 
   (-> (sut/sql-honey "SELECT DISTINCT a, b FROM t")
       (sql/format {:inline true}))
