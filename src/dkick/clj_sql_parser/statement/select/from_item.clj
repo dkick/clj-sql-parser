@@ -4,7 +4,7 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.schema Table)
-   (net.sf.jsqlparser.statement.select ParenthesedSelect)))
+   (net.sf.jsqlparser.statement.select Join ParenthesedSelect)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -63,11 +63,26 @@
           (.isLeft join)  :left
           (.isInner join) :inner
 
+          (not-any? #(% join)
+                    [Join/.isApply
+                     Join/.isCross
+                     Join/.isFull
+                     Join/.isGlobal
+                     Join/.isInner
+                     Join/.isLeft
+                     Join/.isNatural
+                     Join/.isOuter
+                     Join/.isRight
+                     Join/.isSemi
+                     Join/.isSimple
+                     Join/.isStraight])
+          :join
+
           :else
           (throw
            (ex-info
             "Unknown type of join"
-            {:join-object join
+            {:join-object #t join
              :join-data   (join-data join)})))
 
         table

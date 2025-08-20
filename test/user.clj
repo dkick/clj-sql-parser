@@ -1,6 +1,9 @@
 (ns user
   (:require
+   [babashka.fs :as fs]
    [clojure.java.io :as io]
+   [clojure.string :as str]
+   [dkick.clj-sql-parser :as csp]
    [honey.sql :as sql]
    [honey.sql.helpers :as sqh]
    [malli.dev :as m.dev]
@@ -28,6 +31,19 @@
   (m.dev/stop!))
 
 (start!)
+
+(defn sql-file-seq [x]
+  (->> (file-seq x)
+       (filter fs/regular-file?)
+       (filter #(str/ends-with? % "sql"))))
+
+(defn file->sql-honey [x]
+  (-> (slurp x)
+      (str/replace #"(?m)^\s*\n(?:\s*\n)*" "\n")
+      csp/sql-honey))
+
+(comment
+  #__)
 
 (comment
   [::sql/_ ::sqh/_ #'stop!]

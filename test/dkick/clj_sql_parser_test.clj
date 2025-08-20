@@ -121,37 +121,4 @@
            "SELECT * FROM cte) AS v")))))
 
 (comment
-  (-> (sut/sql-honey "SELECT (COUNT(*)) AS A")
-  ;; => Execution error (IllegalArgumentException) at dkick.clj-sql-parser.ExpressionVisitorAdapter/-visit (ExpressionVisitorAdapter.clj:12).
-  ;;    No method in multimethod 'visit-after' for dispatch value: class net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList
-      #_|)
-
-  (require '[clojure.pprint :refer [pprint]])
-
-  (let [m (sut/sql-honey
-           "
-SELECT DISTINCT
-    dc.costcenter_key,
-    dc.cc_company
-FROM `dev_silver`.`dev_dkick_dimensions`.`dim_costcenter` AS dc
-LEFT JOIN `dev_silver`.`dev_dkick_facts`.`fact_orders` AS fo
-  ON fo.order_costcenter_key = dc.costcenter_key AND fo.st_row_current = 1
-WHERE dc.st_row_current = 1
-  AND dc.costcenter_identifier <> '<NA>'
-  -- ignore costcenters from orders before 1/1/23
-  AND (fo.order_costcenter_key IS NULL OR fo.order_entry_date >= '2023-01-01')
-  -- a row returned here will fail the test
-  AND dc.cc_company = '<NA>'")
-
-        s (sql/format m {:inline true})]
-    (pprint {:m m
-             :s s}))
-
-  (-> (sut/sql-honey "SELECT DISTINCT a, b FROM t")
-      (sql/format {:inline true}))
-
-  (-> (sut/sql-honey "SELECT a, b FROM t, u LEFT JOIN v ON t.c = v.c")
-      #_(sql/format {:ineline true}))
-  ;; => {:select [:a :b], :from [:t :u], :join-by [:left [:v [:= :t.c :v.c]]]}
-  ;; => ["SELECT a, b FROM t, u LEFT JOIN v ON t.c = v.c"]
-  #_|)
+  #__)
