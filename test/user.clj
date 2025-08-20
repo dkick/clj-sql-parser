@@ -2,8 +2,11 @@
   (:require
    [babashka.fs :as fs]
    [clojure.java.io :as io]
+   [clojure.pprint :as pp :refer [pprint]]
    [clojure.string :as str]
    [dkick.clj-sql-parser :as csp]
+   [dkick.clj-sql-parser.statement.select.from-item
+    :refer [join-data]]
    [honey.sql :as sql]
    [honey.sql.helpers :as sqh]
    [malli.dev :as m.dev]
@@ -46,5 +49,6 @@
   #__)
 
 (comment
-  [::sql/_ ::sqh/_ #'stop!]
+  [::sql/_ ::sqh/_
+   #'file->sql-honey #'join-data #'pprint #'stop! #'sql-file-seq]
   #__)
