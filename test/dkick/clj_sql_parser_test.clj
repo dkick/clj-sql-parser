@@ -28,8 +28,11 @@
           :from   [:t]}
          (get-sql-honey
           "SELECT * FROM t")))
-  (is (= {:select-distinct [:a :b]
-          :from            [:t]}
+  (is (= {:select-distinct
+          [:a :b]
+
+          :from [:t]}
+
          (get-sql-honey
           "SELECT DISTINCT a, b FROM t")))
   (is (= {:select [:a]
@@ -120,8 +123,10 @@
            "(SELECT d FROM (SELECT * FROM t WHERE e = 1) AS u "
            "GROUP BY d HAVING COUNT(*) > 1) "
            "SELECT * FROM cte) AS v"))))
-  (is (= {:select-distinct [:u.a :u.b]
-          :from            [[:t1 :u]]
+  (is (= {:select-distinct
+          [:u.a :u.b]
+
+          :from [[:t1 :u]]
           :join-by
           [:inner
            [[{:select [:*]
@@ -131,7 +136,8 @@
             [:and
              [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
              [:= :v.g 1]]]]
-          :where           [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
+
+          :where [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
          (get-sql-honey
           (str
            "SELECT DISTINCT u.a, u.b "

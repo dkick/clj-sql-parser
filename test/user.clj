@@ -4,7 +4,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [dkick.clj-sql-parser :as csp]
-   [dkick.clj-sql-parser.statement.select.from-item
+   [dkick.clj-sql-parser.statement.select.from-item.joins
     :refer [join-data]]
    [honey.sql :as sql]
    [honey.sql.helpers :as sqh]

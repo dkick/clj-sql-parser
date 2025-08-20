@@ -1,7 +1,9 @@
 (ns dkick.clj-sql-parser.statement.select.FromItemVisitorAdapter
   (:require
    [dkick.clj-sql-parser.statement.select.from-item
-    :refer [visit-after visit-before visit-joins]])
+    :refer [visit-after visit-before]]
+   [dkick.clj-sql-parser.statement.select.from-item.joins
+    :refer [visit-joins]])
   (:gen-class
    :extends net.sf.jsqlparser.statement.select.FromItemVisitorAdapter
    :exposes-methods {visit superVisit}))
