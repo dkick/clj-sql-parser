@@ -2,7 +2,6 @@
   (:require
    [babashka.fs :as fs]
    [clojure.java.io :as io]
-   [clojure.pprint :as pp :refer [pprint]]
    [clojure.string :as str]
    [dkick.clj-sql-parser :as csp]
    [dkick.clj-sql-parser.statement.select.from-item
@@ -45,10 +44,16 @@
       (str/replace #"(?m)^\s*\n(?:\s*\n)*" "\n")
       csp/sql-honey))
 
+(defn try-sql-honey [x]
+  (doseq [x (sql-file-seq x)]
+    (try (file->sql-honey x)
+         (catch Exception e
+           (throw (ex-info "No honey!" {:file x} e))))))
+
 (comment
   #__)
 
 (comment
   [::sql/_ ::sqh/_
-   #'file->sql-honey #'join-data #'pprint #'stop! #'sql-file-seq]
+   #'file->sql-honey #'join-data #'stop! #'sql-file-seq]
   #__)

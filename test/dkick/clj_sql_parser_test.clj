@@ -3,7 +3,8 @@
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]))
+   [honey.sql :as sql]
+   [clojure.string :as str]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -118,7 +119,27 @@
            "FROM (WITH cte AS "
            "(SELECT d FROM (SELECT * FROM t WHERE e = 1) AS u "
            "GROUP BY d HAVING COUNT(*) > 1) "
-           "SELECT * FROM cte) AS v")))))
+           "SELECT * FROM cte) AS v"))))
+  (is (= {:select-distinct [:u.a :u.b]
+          :from            [[:t1 :u]]
+          :join-by
+          [:inner
+           [[{:select [:*]
+              :from   [:t2]
+              :where  [:and [:= :c "U"] [:<> :d nil]]}
+             :v]
+            [:and
+             [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
+             [:= :v.g 1]]]]
+          :where           [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
+         (get-sql-honey
+          (str
+           "SELECT DISTINCT u.a, u.b "
+           "FROM t1 AS u "
+           "INNER JOIN "
+           "(SELECT * FROM t2 WHERE (c = 'U') AND (d IS NOT NULL)) AS v "
+           "ON (u.e = CONCAT('A', v.d, '-', UPPER(v.f))) AND (v.g = 1) "
+           "WHERE (u.g = 1) AND (u.b = '<NA>')")))))
 
 (comment
   #__)

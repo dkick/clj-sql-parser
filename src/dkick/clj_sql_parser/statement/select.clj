@@ -59,9 +59,7 @@
      (.setOffset nil)
      (.setFetch nil)
      ;; Distinct with null getOnSelectItems
-     (.setDistinct nil)
-     ;; Work around SelectVisitorAdapter/.visitJoins
-     )
+     (.setDistinct nil))
    (atom [])])
 
 (defmethod visit-after PlainSelect [that _ context subcontext]

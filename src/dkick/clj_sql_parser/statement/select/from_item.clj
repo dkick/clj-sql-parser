@@ -15,26 +15,19 @@
 (defmethod visit-before ParenthesedSelect [_ sql-parsed _]
   [sql-parsed (atom [])])
 
-(def ^:dynamic *visiting-legit-joins*
-  "We don't like using a dynamic variable here but, at the moment, it
-  seems the easiest way to be sure we don't assume a ParenthesedSelect
-  is associated with a FromItem when it might be found in a join"
-  false)
-
 (defmethod visit-after ParenthesedSelect [_ sql-parsed context subcontext]
-  (assert (not *visiting-legit-joins*))
   (swap! context conj
          (let [alias (some-> sql-parsed .getAlias .getName keyword)]
            (sqh/from (cond-> [(apply merge-with into @subcontext)]
                        alias (conj alias))))))
 
 (defmethod visit-after Table [_ sql-parsed context _]
-  (let [-name (keyword (.getFullyQualifiedName sql-parsed))
-        alias (.getAlias sql-parsed)]
+  (let [x-name (keyword (.getFullyQualifiedName sql-parsed))
+        alias  (.getAlias sql-parsed)]
     (swap! context conj
            (sqh/from (if-not alias
-                       -name
-                       [-name (-> alias .getName keyword)])))))
+                       x-name
+                       [x-name (-> alias .getName keyword)])))))
 
 (defn join-data [x]
   (sort
@@ -54,16 +47,40 @@
     :apply          (.isApply x)
     :fromItem       (.getFromItem x)}))
 
-(defn visit-join [that join]
+(defmulti visit-join
+  (fn [_from-visitor sql-parsed]
+    (type sql-parsed)))
+
+(defmethod visit-join Object [that sql-parsed]
+  (let [context (atom [])]
+    (.accept sql-parsed that context)
+    @context))
+
+(defmethod visit-join ParenthesedSelect [that sql-parsed]
+  (let [context (atom [])
+        alias   (some-> sql-parsed .getAlias .getName keyword)]
+    (.accept (.getSelect sql-parsed) (.getSelectVisitor that) context)
+    (if-not alias
+      @context
+      [(conj @context alias)])))
+
+(defmethod visit-join Table [_ sql-parsed]
+  (let [x-name (keyword (.getFullyQualifiedName sql-parsed))
+        alias  (.getAlias sql-parsed)]
+    [(if-not alias
+       x-name
+       [x-name (-> alias .getName keyword)])]))
+
+(defmethod visit-join Join [that sql-parsed]
   (let [join-type
         (cond
-          (.isOuter join) :outer
-          (.isRight join) :right
-          (.isFull join)  :full
-          (.isLeft join)  :left
-          (.isInner join) :inner
+          (.isOuter sql-parsed) :outer
+          (.isRight sql-parsed) :right
+          (.isFull sql-parsed)  :full
+          (.isLeft sql-parsed)  :left
+          (.isInner sql-parsed) :inner
 
-          (not-any? #(% join)
+          (not-any? #(% sql-parsed)
                     [Join/.isApply
                      Join/.isCross
                      Join/.isFull
@@ -82,30 +99,24 @@
           (throw
            (ex-info
             "Unknown type of join"
-            {:join-object join
-             :join-data   (join-data join)})))
+            {:join-object sql-parsed
+             :join-data   (join-data sql-parsed)})))
+
+        table (visit-join that (.getFromItem sql-parsed))
 
         table
-        (let [from-item (.getFromItem join)
-              -name     (keyword (.getFullyQualifiedName from-item))
-              alias     (.getAlias from-item)]
-          [(if-not alias
-             -name
-             [-name (-> alias .getName keyword)])])
-
-        table
-        (if-not (seq (.getUsingColumns join))
+        (if-not (seq (.getUsingColumns sql-parsed))
           table
           (let [context (atom [])]
-            (doseq [x (.getUsingColumns join)]
+            (doseq [x (.getUsingColumns sql-parsed)]
               (.accept x (.getExpressionVisitor that) context))
             (conj table `[:using ~@(deref context)])))
 
         table
-        (if-not (seq (.getOnExpressions join))
+        (if-not (seq (.getOnExpressions sql-parsed))
           table
           (let [context (atom [])]
-            (doseq [x (.getOnExpressions join)]
+            (doseq [x (.getOnExpressions sql-parsed)]
               (.accept x (.getExpressionVisitor that) context))
             (apply conj table @context)))]
 
@@ -119,8 +130,7 @@
     (if (.isSimple (first x-joins))
       (doseq [x x-joins]
         (-> x .getFromItem (.accept that context)))
-      (binding [*visiting-legit-joins* true]
-        (->> x-joins
-             (mapcat #(visit-join that %))
-             (apply sqh/join-by)
-             (swap! context conj))))))
+      (->> x-joins
+           (mapcat #(visit-join that %))
+           (apply sqh/join-by)
+           (swap! context conj)))))
