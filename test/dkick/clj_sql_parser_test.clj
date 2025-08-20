@@ -126,11 +126,10 @@
   ;;    No method in multimethod 'visit-after' for dispatch value: class net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList
       #_|)
 
-  (sut/sql-honey
-   "
--- This test fails if any relevant cost center has '<NA>' for its division.
+  (require '[clojure.pprint :refer [pprint]])
 
--- This test fails if any relevant cost center has '<NA>' for its company.
+  (let [m (sut/sql-honey
+           "
 SELECT DISTINCT
     dc.costcenter_key,
     dc.cc_company
@@ -143,6 +142,10 @@ WHERE dc.st_row_current = 1
   AND (fo.order_costcenter_key IS NULL OR fo.order_entry_date >= '2023-01-01')
   -- a row returned here will fail the test
   AND dc.cc_company = '<NA>'")
+
+        s (sql/format m {:inline true})]
+    (pprint {:m m
+             :s s}))
 
   (-> (sut/sql-honey "SELECT DISTINCT a, b FROM t")
       (sql/format {:inline true}))

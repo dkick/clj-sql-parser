@@ -1,5 +1,6 @@
 (ns dkick.clj-sql-parser.expression
   (:require
+   [clojure.string :as str]
    [dkick.clj-sql-parser.multifn :as multifn]
    [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
@@ -25,7 +26,10 @@
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
-           (let [operator (-> sql-parsed .getStringExpression keyword)
+           (let [operator (-> sql-parsed
+                              .getStringExpression
+                              str/lower-case
+                              keyword)
                  right    (peek context')
                  context' (pop context')
                  left     (peek context')
@@ -52,12 +56,7 @@
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
                           [op % nil]))))
 
-(defmethod visit-before ParenthesedExpressionList [_ sql-parsed _]
-  [sql-parsed (atom [])])
-
-(defmethod visit-after ParenthesedExpressionList
-  [_ _ context subcontext]
-  (swap! context conj [@subcontext]))
+(defmethod visit-after ParenthesedExpressionList [_ _ _ _])
 
 ;;; We cannot quite believe that there is no base class for all of
 ;;; these simple value types
