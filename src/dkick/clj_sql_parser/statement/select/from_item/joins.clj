@@ -47,34 +47,40 @@
     :apply          (.isApply x)
     :fromItem       (.getFromItem x)}))
 
+(def types-of-join
+  [Join/.isApply
+   Join/.isCross
+   Join/.isFull
+   Join/.isGlobal
+   Join/.isInner
+   Join/.isLeft
+   Join/.isNatural
+   Join/.isOuter
+   Join/.isRight
+   Join/.isSemi
+   Join/.isSimple
+   Join/.isStraight])
+
+(defn no-type? [sql-parsed]
+  (not-any? #(% sql-parsed) types-of-join))
+
 (defn type-of-join [sql-parsed]
+  ;; We were a bit confused by the logic in the Join/.toString for how
+  ;; to check these flags, and how those checks interact with the
+  ;; HoneySQL types. This is a best guess.
   (cond (.isOuter sql-parsed) :outer
-              (.isRight sql-parsed) :right
-              (.isFull sql-parsed)  :full
-              (.isLeft sql-parsed)  :left
-              (.isInner sql-parsed) :inner
+        (.isRight sql-parsed) :right
+        (.isFull sql-parsed)  :full
+        (.isLeft sql-parsed)  :left
+        (.isInner sql-parsed) :inner
+        (no-type? sql-parsed) :join
 
-              (not-any? #(% sql-parsed)
-                        [Join/.isApply
-                         Join/.isCross
-                         Join/.isFull
-                         Join/.isGlobal
-                         Join/.isInner
-                         Join/.isLeft
-                         Join/.isNatural
-                         Join/.isOuter
-                         Join/.isRight
-                         Join/.isSemi
-                         Join/.isSimple
-                         Join/.isStraight])
-              :join
-
-              :else
-              (throw
-               (ex-info
-                "Unknown type of join"
-                {:join-object sql-parsed
-                 :join-data   (join-data sql-parsed)}))))
+        :else
+        (throw
+         (ex-info
+          "Unknown type of join"
+          {:join-object sql-parsed
+           :join-data   (join-data sql-parsed)}))))
 
 (defmethod visit-join Join [that sql-parsed]
   (let [what-to-join (visit-join that (.getFromItem sql-parsed))
