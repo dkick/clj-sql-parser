@@ -43,6 +43,11 @@
           :from   [:t :u]}
          (get-sql-honey
           "SELECT a, b FROM t, u")))
+  (is (= {:select  [:a :b]
+          :from    [:t :u]
+          :join-by [:left [:v [:= :t.c :v.c]]]}
+         (get-sql-honey
+          "SELECT a, b FROM t, u LEFT JOIN v ON t.c = v.c")))
   (is (= {:select [:*]
           :from   [[{:select [:*]
                      :from   [:t]}]]}
@@ -121,8 +126,8 @@
   ;;    No method in multimethod 'visit-after' for dispatch value: class net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList
       #_|)
 
-  (def sql-str
-    "
+  (sut/sql-honey
+   "
 -- This test fails if any relevant cost center has '<NA>' for its division.
 
 -- This test fails if any relevant cost center has '<NA>' for its company.
@@ -139,17 +144,11 @@ WHERE dc.st_row_current = 1
   -- a row returned here will fail the test
   AND dc.cc_company = '<NA>'")
 
-  (sut/sql-honey sql-str)
-  
-  (->> (-> (sut/parse sql-str)
-           .getJoins)
-       (mapv (fn [x] {:from-item (.getFromItem x)
-                     :on-expressions (.getOnExpressions x)})))
-  ;; => ({:from-item
-  ;;      #object[net.sf.jsqlparser.schema.Table 0x37540736 "`dev_silver`.`dev_dkick_facts`.`fact_orders` AS fo"],
-  ;;      :on-expressions
-  ;;      (#object[net.sf.jsqlparser.expression.operators.conditional.AndExpression 0x774b0b3d "fo.order_costcenter_key = dc.costcenter_key AND fo.st_row_current = 1"])})
-
   (-> (sut/sql-honey "SELECT DISTINCT a, b FROM t")
       (sql/format {:inline true}))
+
+  (-> (sut/sql-honey "SELECT a, b FROM t, u LEFT JOIN v ON t.c = v.c")
+      #_(sql/format {:ineline true}))
+  ;; => {:select [:a :b], :from [:t :u], :join-by [:left [:v [:= :t.c :v.c]]]}
+  ;; => ["SELECT a, b FROM t, u LEFT JOIN v ON t.c = v.c"]
   #_|)

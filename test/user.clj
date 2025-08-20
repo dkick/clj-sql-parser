@@ -19,8 +19,6 @@
 
 ;;; Below is the regular content of this project-local user.clj
 
-(alter-var-root #'*compile-path* (constantly "target/classes"))
-
 (defn start!
   []
   (m.dev/start! {:report (m.dev.pretty/reporter)}))
