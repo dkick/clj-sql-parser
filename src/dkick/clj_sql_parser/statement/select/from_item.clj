@@ -82,7 +82,7 @@
           (throw
            (ex-info
             "Unknown type of join"
-            {:join-object #t join
+            {:join-object join
              :join-data   (join-data join)})))
 
         table
