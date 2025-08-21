@@ -6,7 +6,7 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    BinaryExpression Function LongValue StringValue)
+    BinaryExpression Function LongValue StringValue TrimFunction)
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
@@ -66,3 +66,10 @@
 
 (defmethod visit-after StringValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
+
+(defmethod visit-before TrimFunction [_ sql-parsed _]
+  (assert (nil? (.getTrimSpecification sql-parsed)))
+  (assert (nil? (.getFromExpression sql-parsed)))
+  (assert (not (.isUsingFromKeyword sql-parsed)))
+  [(Function. "TRIM" (into-array Column [(.getExpression sql-parsed)]))
+   (atom [])])
