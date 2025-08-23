@@ -1,7 +1,6 @@
 (ns dkick.clj-sql-parser-test
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
@@ -31,6 +30,10 @@
           :from   [:t]}
          (get-sql-honey
           "SELECT * FROM t")))
+  (is (= {:select [[:* :except [:a]]]
+          :from   [:t]}
+         (get-sql-honey
+          "SELECT * EXCEPT (a) FROM t")))
   (is (= {dstnct [:a :b]
           :from  [:t]}
          (get-sql-honey
@@ -138,22 +141,21 @@
            "(SELECT * FROM t2 WHERE (c = 'U') AND (d IS NOT NULL)) AS v "
            "ON (u.e = CONCAT('A', v.d, '-', UPPER(v.f))) AND (v.g = 1) "
            "WHERE (u.g = 1) AND (u.b = '<NA>')"))))
-  (is (= {:select [:*]
-          :from   [:data_with_change_hash]
-          :qualify
-          [:or
-           [:<>
-            :_row_hash
-            [:over
-             [[:LAG :_row_hash]
-              {:partition-by [:cono :division_number]
-               :order-by     [:_ingest_timestamp]}]]]
-           [:=
-            [:over
-             [[:LAG :_row_hash]
-              {:partition-by [:cono :division_number]
-               :order-by     [:_ingest_timestamp]}]]
-            nil]]}
+  (is (= {:select  [:*]
+          :from    [:data_with_change_hash]
+          :qualify [:or
+                    [:<>
+                     :_row_hash
+                     [:over
+                      [[:LAG :_row_hash]
+                       {:partition-by [:cono :division_number]
+                        :order-by     [:_ingest_timestamp]}]]]
+                    [:=
+                     [:over
+                      [[:LAG :_row_hash]
+                       {:partition-by [:cono :division_number]
+                        :order-by     [:_ingest_timestamp]}]]
+                     nil]]}
          (get-sql-honey
           (str
            "SELECT * FROM data_with_change_hash "

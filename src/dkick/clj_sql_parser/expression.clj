@@ -19,10 +19,14 @@
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
 
-(defmethod visit-after AllColumns [_ sql-parsed context _]
-  (assert (not (-> sql-parsed .getExceptColumns seq)))
+(defmethod visit-after AllColumns [that sql-parsed context _]
   (assert (not (-> sql-parsed .getReplaceExpressions seq)))
-  (swap! context conj :*))
+  (swap! context conj :*)
+  (when-let [except (-> sql-parsed .getExceptColumns seq)]
+    (let [except-context (atom [])]
+      (doseq [x except]
+        (.accept x that except-context))
+      (swap! context (poke (fn [x] [x :except @except-context]))))))
 
 (defmethod visit-before AnalyticExpression [_ sql-parsed _]
   [sql-parsed (atom [])])
