@@ -137,18 +137,38 @@
            "INNER JOIN "
            "(SELECT * FROM t2 WHERE (c = 'U') AND (d IS NOT NULL)) AS v "
            "ON (u.e = CONCAT('A', v.d, '-', UPPER(v.f))) AND (v.g = 1) "
-           "WHERE (u.g = 1) AND (u.b = '<NA>')")))))
+           "WHERE (u.g = 1) AND (u.b = '<NA>')"))))
+  (is (= {:select [:*]
+          :from   [:data_with_change_hash]
+          :qualify
+          [:or
+           [:<>
+            :_row_hash
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number]
+               :order-by     [:_ingest_timestamp]}]]]
+           [:=
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number]
+               :order-by     [:_ingest_timestamp]}]]
+            nil]]}
+         (get-sql-honey
+          (str
+           "SELECT * FROM data_with_change_hash "
+           "QUALIFY "
+           "(_row_hash <> LAG(_row_hash) "
+           "OVER "
+           "(PARTITION BY cono, division_number "
+           "ORDER BY _ingest_timestamp ASC)) "
+           "OR "
+           "(LAG(_row_hash) "
+           "OVER "
+           "(PARTITION BY cono, division_number "
+           "ORDER BY _ingest_timestamp ASC) IS NULL)")))))
 
 (comment
-  (let [lag-over [:over [[:lag :-row-hash]
-                         {:partition-by [:a :b]
-                          :order-by     [[:-ingest-timestamp :asc]]}]]]
-    (sql/format {:select  :*
-                 :from    :data-with-change-hash
-                 :qualify [:or
-                           [:<> :-row-hash lag-over]
-                           [:is lag-over nil]]}))
-
   (def borked
     (io/file
      ""
@@ -165,36 +185,4 @@
      "bronze"
      "vgensqlp_sqlserver"
      "bronze_vgensqlp__vw_non_site_directory_sites.sql"))
-
-  (-> (sut/sql-honey
-       (str/trim
-        "
-SELECT *
-FROM data_with_change_hash
-QUALIFY _row_hash <> LAG(_row_hash) OVER (
-    PARTITION BY cono, division_number
-    ORDER BY _ingest_timestamp ASC
-)
-OR LAG(_row_hash) OVER (
-    PARTITION BY cono, division_number
-    ORDER BY _ingest_timestamp ASC
-) IS NULL"))
-      #_(sql/format {:inline true}))
-  ;; => {:select [:*],
-  ;;     :from [:data_with_change_hash],
-  ;;     :qualify
-  ;;     [:or
-  ;;      [:<>
-  ;;       :_row_hash
-  ;;       [:over
-  ;;        [[:LAG :_row_hash]
-  ;;         {:partition-by [:cono :division_number],
-  ;;          :order-by [:_ingest_timestamp]}]]]
-  ;;      [:=
-  ;;       [:over
-  ;;        [[:LAG :_row_hash]
-  ;;         {:partition-by [:cono :division_number],
-  ;;          :order-by [:_ingest_timestamp]}]]
-  ;;       nil]]}
-  ;; => ["SELECT * FROM data_with_change_hash QUALIFY (_row_hash <> LAG(_row_hash) OVER (PARTITION BY cono, division_number ORDER BY _ingest_timestamp ASC)) OR (LAG(_row_hash) OVER (PARTITION BY cono, division_number ORDER BY _ingest_timestamp ASC) IS NULL)"]
   #__)
