@@ -2,12 +2,12 @@
   (:require
    [clojure.string :as str]
    [dkick.clj-sql-parser.multifn :as multifn]
-   [dkick.clj-sql-parser.olio :refer [iff-first poke]]
+   [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
     AnalyticExpression AnalyticType BinaryExpression CastExpression
-    Expression Function LongValue StringValue TrimFunction WindowDefinition)
+    Expression Function LongValue StringValue TrimFunction)
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
