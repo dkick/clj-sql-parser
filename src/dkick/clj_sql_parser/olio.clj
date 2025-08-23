@@ -6,6 +6,11 @@
     (assert (nil? cdr))
     car))
 
+(defmulti pojo type)
+
+(defmethod pojo Object [x]
+  (bean x))
+
 (defn poke
   ([f] #(poke % f))
   ([xs f]

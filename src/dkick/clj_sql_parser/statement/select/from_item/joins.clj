@@ -33,35 +33,21 @@
   (sort
    {:on-expressions (.getOnExpressions x)
     :using-columns  (.getUsingColumns x)
-    :outer          (.isOuter x)
-    :right          (.isRight x)
-    :left           (.isLeft x)
-    :natural        (.isNatural x)
-    :global         (.isGlobal x)
-    :full           (.isFull x)
-    :inner          (.isInner x)
-    :simple         (.isSimple x)
-    :cross          (.isCross x)
-    :semi           (.isSemi x)
-    :straight       (.isStraight x)
-    :apply          (.isApply x)
-    :fromItem       (.getFromItem x)}))
+
+    :outer    (.isOuter x)    :right   (.isRight x),
+    :left     (.isLeft x)     :natural (.isNatural x)
+    :global   (.isGlobal x)   :full    (.isFull x)
+    :inner    (.isInner x)    :simple  (.isSimple x)
+    :cross    (.isCross x)    :semi    (.isSemi x)
+    :straight (.isStraight x) :apply   (.isApply x)
+    :fromItem (.getFromItem x)}))
 
 (def types-of-join
-  [Join/.isApply
-   Join/.isCross
-   Join/.isFull
-   Join/.isGlobal
-   Join/.isInner
-   Join/.isLeft
-   Join/.isNatural
-   Join/.isOuter
-   Join/.isRight
-   Join/.isSemi
-   Join/.isSimple
-   Join/.isStraight])
+  [Join/.isApply Join/.isCross Join/.isFull    Join/.isGlobal
+   Join/.isInner Join/.isLeft  Join/.isNatural Join/.isOuter
+   Join/.isRight Join/.isSemi  Join/.isSimple  Join/.isStraight])
 
-(defn no-type? [sql-parsed]
+(defn default? [sql-parsed]
   (not-any? #(% sql-parsed) types-of-join))
 
 (defn type-of-join [sql-parsed]
@@ -73,7 +59,7 @@
         (.isFull sql-parsed)  :full
         (.isLeft sql-parsed)  :left
         (.isInner sql-parsed) :inner
-        (no-type? sql-parsed) :join
+        (default? sql-parsed) :join
 
         :else
         (throw
@@ -105,7 +91,7 @@
 
 (defn visit-joins [that joins context]
   (doseq [[x-joins y-joins]
-          (->> (partition-by #(.isSimple %) joins)
+          (->> (partition-by Join/.isSimple joins)
                (partition 2 1 nil))]
     (assert (or (nil? y-joins) (not (.isSimple (first y-joins)))))
     (if (.isSimple (first x-joins))

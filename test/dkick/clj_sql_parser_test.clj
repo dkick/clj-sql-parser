@@ -1,10 +1,11 @@
 (ns dkick.clj-sql-parser-test
   (:require
+   [clojure.java.io :as io]
+   [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]
-   [clojure.string :as str]))
+   [honey.sql :as sql]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -20,6 +21,8 @@
 (defn get-sql-honey [sql-str]
   (:sql-honey (reparse sql-str)))
 
+(def dstnct :select-distinct)
+
 (deftest select-test
   (is (= {:select [1]}
          (get-sql-honey
@@ -28,11 +31,8 @@
           :from   [:t]}
          (get-sql-honey
           "SELECT * FROM t")))
-  (is (= {:select-distinct
-          [:a :b]
-
-          :from [:t]}
-
+  (is (= {dstnct [:a :b]
+          :from  [:t]}
          (get-sql-honey
           "SELECT DISTINCT a, b FROM t")))
   (is (= {:select [:a]
@@ -96,25 +96,21 @@
           (str "SELECT a FROM "
                "(SELECT * FROM t WHERE b = 1) AS subquery "
                "GROUP BY a HAVING COUNT(*) > 1"))))
-  (is (= {:select
-          [[[:COUNT :*] :a]
-           [[:<> [:COUNT :*] 0] :b]
-           [[:<> [:COUNT :*] 0] :c]]
-
-          :from
-          [[{:with
-             [[:cte
-               {:select   [:d]
-                :from     [[{:select [:*]
-                             :from   [:t]
-                             :where  [:= :e 1]}
-                            :u]]
-                :group-by [:d]
-                :having   [:> [:COUNT :*] 1]}]]
-
-             :select [:*]
-             :from   [:cte]}
-            :v]]}
+  (is (= {:select [[[:COUNT :*] :a]
+                   [[:<> [:COUNT :*] 0] :b]
+                   [[:<> [:COUNT :*] 0] :c]]
+          :from   [[{:with
+                     [[:cte
+                       {:select   [:d]
+                        :from     [[{:select [:*]
+                                     :from   [:t]
+                                     :where  [:= :e 1]}
+                                    :u]]
+                        :group-by [:d]
+                        :having   [:> [:COUNT :*] 1]}]]
+                     :select [:*]
+                     :from   [:cte]}
+                    :v]]}
          (get-sql-honey
           (str
            "SELECT "
@@ -123,21 +119,17 @@
            "(SELECT d FROM (SELECT * FROM t WHERE e = 1) AS u "
            "GROUP BY d HAVING COUNT(*) > 1) "
            "SELECT * FROM cte) AS v"))))
-  (is (= {:select-distinct
-          [:u.a :u.b]
-
-          :from [[:t1 :u]]
-          :join-by
-          [:inner
-           [[{:select [:*]
-              :from   [:t2]
-              :where  [:and [:= :c "U"] [:<> :d nil]]}
-             :v]
-            [:and
-             [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
-             [:= :v.g 1]]]]
-
-          :where [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
+  (is (= {dstnct   [:u.a :u.b]
+          :from    [[:t1 :u]]
+          :join-by [:inner
+                    [[{:select [:*]
+                       :from   [:t2]
+                       :where  [:and [:= :c "U"] [:<> :d nil]]}
+                      :v]
+                     [:and
+                      [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
+                      [:= :v.g 1]]]]
+          :where   [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
          (get-sql-honey
           (str
            "SELECT DISTINCT u.a, u.b "
@@ -148,4 +140,61 @@
            "WHERE (u.g = 1) AND (u.b = '<NA>')")))))
 
 (comment
+  (let [lag-over [:over [[:lag :-row-hash]
+                         {:partition-by [:a :b]
+                          :order-by     [[:-ingest-timestamp :asc]]}]]]
+    (sql/format {:select  :*
+                 :from    :data-with-change-hash
+                 :qualify [:or
+                           [:<> :-row-hash lag-over]
+                           [:is lag-over nil]]}))
+
+  (def borked
+    (io/file
+     ""
+     "Users"
+     "dkick"
+     "src"
+     "vallenit"
+     "single-truth-databricks"
+     "target"
+     "compiled"
+     "single_truth_databricks"
+     "src"
+     "models"
+     "bronze"
+     "vgensqlp_sqlserver"
+     "bronze_vgensqlp__vw_non_site_directory_sites.sql"))
+
+  (-> (sut/sql-honey
+       (str/trim
+        "
+SELECT *
+FROM data_with_change_hash
+QUALIFY _row_hash <> LAG(_row_hash) OVER (
+    PARTITION BY cono, division_number
+    ORDER BY _ingest_timestamp ASC
+)
+OR LAG(_row_hash) OVER (
+    PARTITION BY cono, division_number
+    ORDER BY _ingest_timestamp ASC
+) IS NULL"))
+      #_(sql/format {:inline true}))
+  ;; => {:select [:*],
+  ;;     :from [:data_with_change_hash],
+  ;;     :qualify
+  ;;     [:or
+  ;;      [:<>
+  ;;       :_row_hash
+  ;;       [:over
+  ;;        [[:LAG :_row_hash]
+  ;;         {:partition-by [:cono :division_number],
+  ;;          :order-by [:_ingest_timestamp]}]]]
+  ;;      [:=
+  ;;       [:over
+  ;;        [[:LAG :_row_hash]
+  ;;         {:partition-by [:cono :division_number],
+  ;;          :order-by [:_ingest_timestamp]}]]
+  ;;       nil]]}
+  ;; => ["SELECT * FROM data_with_change_hash QUALIFY (_row_hash <> LAG(_row_hash) OVER (PARTITION BY cono, division_number ORDER BY _ingest_timestamp ASC)) OR (LAG(_row_hash) OVER (PARTITION BY cono, division_number ORDER BY _ingest_timestamp ASC) IS NULL)"]
   #__)

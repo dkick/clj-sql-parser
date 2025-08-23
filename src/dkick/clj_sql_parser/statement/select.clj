@@ -38,7 +38,6 @@
                        :offset  (.getOffset sql-parsed)
                        :fetch   (.getFetch sql-parsed)})
   ;; TODO: At the moment, we do not handle the following
-  (assert (nil? (:qualify (peek @context))))
   (assert (nil? (:offset (peek @context))))
   (assert (nil? (:fetch (peek @context))))
 
@@ -76,6 +75,11 @@
         (.accept having-sql expression-visitor having-context)
         (assert (= (count @having-context) 1))
         (swap! subcontext conj (sqh/having (peek @having-context)))))
+    (when-let [qualify-sql (:qualify sql-parts-delayed)]
+      (let [qualify-context (atom [])]
+        (.accept qualify-sql expression-visitor qualify-context)
+        (assert (= (count @qualify-context) 1))
+        (swap! subcontext conj `{:qualify ~@(deref qualify-context)})))
     (swap! subcontext
            (fn [x]
              [(cond-> (apply merge-with into x)

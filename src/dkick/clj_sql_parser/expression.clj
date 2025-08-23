@@ -2,11 +2,12 @@
   (:require
    [clojure.string :as str]
    [dkick.clj-sql-parser.multifn :as multifn]
-   [dkick.clj-sql-parser.olio :refer [poke]]
+   [dkick.clj-sql-parser.olio :refer [iff-first poke]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    BinaryExpression Function LongValue StringValue TrimFunction)
+    AnalyticExpression AnalyticType BinaryExpression CastExpression
+    Expression Function LongValue StringValue TrimFunction WindowDefinition)
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
@@ -23,6 +24,48 @@
   (assert (not (-> sql-parsed .getReplaceExpressions seq)))
   (swap! context conj :*))
 
+(defmethod visit-before AnalyticExpression [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after AnalyticExpression
+  [that sql-parsed context subcontext]
+  (assert (= (.getType sql-parsed) AnalyticType/OVER))
+  (let [analytical-function
+        (with-meta
+          `[~(-> sql-parsed .getName keyword) ~@(deref subcontext)]
+          {:type :sql-fn})
+
+        window-definition
+        (let [window-definition-context (atom [])]
+          (when-let [x-partition-by (-> sql-parsed
+                                        .getWindowDefinition
+                                        .getPartitionBy
+                                        .getPartitionExpressionList
+                                        seq)]
+            (let [partition-by-context (atom [])]
+              (doseq [x x-partition-by]
+                (.accept x that partition-by-context))
+              (swap! window-definition-context conj
+                     (apply sqh/partition-by @partition-by-context))))
+          (when-let [order-by (-> sql-parsed
+                                  .getWindowDefinition
+                                  .getOrderBy
+                                  .getOrderByElements)]
+            (let [order-by-context (atom [])]
+              (.visitOrderBy that order-by order-by-context)
+              (swap! window-definition-context conj
+                     (apply sqh/order-by @order-by-context)))))
+
+        ;; From where in the AnalyticalFunction might we get an alias?
+        alias nil
+
+        args
+        (cond-> [analytical-function
+                 (apply merge-with into window-definition)]
+          alias (conj alias))]
+
+    (swap! context #(apply conj %1 %2) (sqh/over args))))
+
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
@@ -35,6 +78,13 @@
                  left     (peek context')
                  context' (pop context')]
              (conj context' [operator left right])))))
+
+(defmethod visit-after CastExpression [_ sql-parsed context _]
+  (let [col-data-type
+        (-> sql-parsed .getColDataType str/lower-case keyword)]
+    (swap! context
+           (poke (fn [left-expression]
+                   [:cast left-expression col-data-type])))))
 
 (defmethod visit-after Column [_ sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
@@ -71,5 +121,6 @@
   (assert (nil? (.getTrimSpecification sql-parsed)))
   (assert (nil? (.getFromExpression sql-parsed)))
   (assert (not (.isUsingFromKeyword sql-parsed)))
-  [(Function. "TRIM" (into-array Column [(.getExpression sql-parsed)]))
+  [(let [args (into-array Expression [(.getExpression sql-parsed)])]
+     (Function. "TRIM" args))
    (atom [])])

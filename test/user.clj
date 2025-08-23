@@ -34,26 +34,51 @@
 
 (start!)
 
-(defn sql-file-seq [x]
-  (->> (file-seq x)
+(defn sql-file-seq [dir]
+  (->> (file-seq dir)
        (filter fs/regular-file?)
        (filter #(str/ends-with? % "sql"))))
 
-(defn file->sql-honey [x]
-  (-> (slurp x)
+(defn file->sql-honey [file]
+  (-> (slurp file)
       (str/replace #"(?m)^\s*\n(?:\s*\n)*" "\n")
       csp/sql-honey))
 
-(defn try-sql-honey [x]
-  (doseq [x (sql-file-seq x)]
-    (try (file->sql-honey x)
-         (catch Exception e
-           (throw (ex-info "No honey!" {:file x} e))))))
+(defn file->sql-parsed [file]
+  (-> (slurp file)
+      (str/replace #"(?m)^\s*\n(?:\s*\n)*" "\n")
+      csp/parse))
+
+(defn try-sql-honey [dir]
+  (doseq [file (sql-file-seq dir)]
+    (try (file->sql-honey file)
+         (catch Throwable e
+           (throw (ex-info "No honey!" {:file file} e))))))
+
+(defn try-sql-parsed [dir]
+  (doseq [file (sql-file-seq dir)]
+    (try (file->sql-parsed file)
+         (catch Throwable e
+           (throw (ex-info "Not even parsed!" {:file file} e))))))
+
+(defn sql-honey-ex-seq [dir]
+  (->> (sql-file-seq dir)
+       (map #(try (file->sql-honey %)
+                  (catch Throwable e
+                    (ex-info (ex-message e) {:file %} e))))))
+
+(defn sql-parsed-ex-seq [dir]
+  (->> (sql-file-seq dir)
+       (map #(try (file->sql-parsed %)
+                  (catch Throwable e
+                    (ex-info (ex-message e) {:file %} e))))))
 
 (comment
   #__)
 
 (comment
   [::sql/_ ::sqh/_
-   #'file->sql-honey #'join-data #'stop! #'sql-file-seq]
+   #'file->sql-honey #'join-data #'stop! #'sql-file-seq
+   #'sql-honey-ex-seq #'sql-parsed-ex-seq #'try-sql-honey
+   #'try-sql-parsed]
   #__)
