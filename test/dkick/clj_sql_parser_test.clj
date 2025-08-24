@@ -171,20 +171,4 @@
            "ORDER BY _ingest_timestamp ASC) IS NULL)")))))
 
 (comment
-  (def borked
-    (io/file
-     ""
-     "Users"
-     "dkick"
-     "src"
-     "vallenit"
-     "single-truth-databricks"
-     "target"
-     "compiled"
-     "single_truth_databricks"
-     "src"
-     "models"
-     "bronze"
-     "vgensqlp_sqlserver"
-     "bronze_vgensqlp__vw_non_site_directory_sites.sql"))
   #__)

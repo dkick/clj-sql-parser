@@ -104,8 +104,11 @@
           ;; This makes for an easy test in visit-after SelectItem
           {:type :sql-fn})))
 
-(defmethod visit-after GroupByElement [_ _ context _]
-  (swap! context (poke #(sqh/group-by %))))
+(defmethod visit-before GroupByElement [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after GroupByElement [_ _ context subcontext]
+  (swap! context conj (apply sqh/group-by @subcontext)))
 
 (defmethod visit-after IsNullExpression [_ sql-parsed context _]
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
