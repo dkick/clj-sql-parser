@@ -6,7 +6,7 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.statement.select
-    ParenthesedSelect PlainSelect WithItem)))
+    ParenthesedSelect PlainSelect SetOperationList WithItem)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -51,13 +51,15 @@
   [;; Modify sql-parsed to remove the problematic parts. We will
    ;; visit-after PlainSelect them later
    (doto sql-parsed
-     ;; Expressions without distinct types
+     ;; The following return plain ol' Expressions without distinct
+     ;; types
      (.setWhere nil)
      (.setHaving nil)
      (.setQualify nil)
      (.setOffset nil)
      (.setFetch nil)
-     ;; Distinct with null getOnSelectItems
+     ;; Distinct can be found with a null getOnSelectItems, which then
+     ;; fails in the superclass, so we working around it here
      (.setDistinct nil))
    (atom [])])
 
@@ -87,6 +89,11 @@
                 (set/rename-keys {:select :select-distinct}))]))
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))
+
+(defmethod visit-after SetOperationList [_ sql-parsed context _]
+  ;; #t sql-parsed
+  ;; #t context
+  #_(throw (ex-info "N/A" {:sql-parsed sql-parsed, :context context})))
 
 (defmethod visit-after WithItem [_ sql-parsed context _]
   (let [alias (some-> sql-parsed .getAlias .getName keyword)]

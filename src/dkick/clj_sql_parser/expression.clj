@@ -11,10 +11,12 @@
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
-   (net.sf.jsqlparser.statement.select AllColumns GroupByElement)))
+   (net.sf.jsqlparser.statement.select
+    AllColumns GroupByElement OrderByElement)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
+(defmulti visit-order-by multifn/visit-context-group)
 
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
@@ -132,3 +134,13 @@
   [(let [args (into-array Expression [(.getExpression sql-parsed)])]
      (Function. "TRIM" args))
    (atom [])])
+
+(defmethod visit-order-by OrderByElement [that sql-parsed context]
+  (.accept (.getExpression sql-parsed) that context)
+  (swap! context (poke #(sqh/order-by %))))
+
+(defmethod visit-order-by java.util.List [that sql-parsed context]
+    (let [subcontext (atom [])]
+      (doseq [x sql-parsed]
+        (visit-order-by that x subcontext))
+      (swap! context conj (apply merge-with into @subcontext))))

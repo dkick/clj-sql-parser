@@ -1,6 +1,5 @@
 (ns dkick.clj-sql-parser-test
   (:require
-   [clojure.java.io :as io]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
@@ -171,4 +170,6 @@
            "ORDER BY _ingest_timestamp ASC) IS NULL)")))))
 
 (comment
+  (sut/sql-honey
+   "SELECT * FROM unioned WHERE n <= 109574 ORDER BY n")
   #__)
