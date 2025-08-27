@@ -1,8 +1,8 @@
 (ns user
   (:require
    [clojure.java.io :as io]
-   [dkick.clj-sql-parser.statement.select.from-item.joins
-    :refer [join-data]]
+   [honey.sql :as sql]
+   [honey.sql.helpers :as sqh]
    [malli.dev :as m.dev]
    [malli.dev.pretty :as m.dev.pretty]))
 
@@ -30,5 +30,5 @@
 (start!)
 
 (comment
-  [#'stop!]
+  [::sqh/_ ::sql/_ #'stop!]
   #__)

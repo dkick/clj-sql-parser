@@ -167,9 +167,26 @@
            "(LAG(_row_hash) "
            "OVER "
            "(PARTITION BY cono, division_number "
-           "ORDER BY _ingest_timestamp ASC) IS NULL)")))))
+           "ORDER BY _ingest_timestamp ASC) IS NULL)"))))
+  (is (= {:union
+          [{:intersect
+            [{:union
+              [{:select [:*], :from [:t1]}
+               {:select [:*], :from [:t2]}
+               {:select [:*], :from [:t3]}
+               {:select [:*], :from [:t4]}]}
+             {:select [:*], :from [:t5]}]}
+           {:select [:*], :from [:t6]}],
+          :order-by [:a :b]}
+         (get-sql-honey
+          (str
+           "SELECT * FROM t1 UNION "
+           "SELECT * FROM t2 UNION "
+           "SELECT * FROM t3 UNION "
+           "SELECT * FROM t4 INTERSECT "
+           "SELECT * FROM t5 UNION "
+           "SELECT * FROM t6 "
+           "ORDER BY a ASC, b ASC")))))
 
 (comment
-  (sut/sql-honey
-   "SELECT * FROM unioned WHERE n <= 109574 ORDER BY n")
   #__)

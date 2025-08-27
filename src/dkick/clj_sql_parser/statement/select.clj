@@ -6,7 +6,8 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.statement.select
-    ParenthesedSelect PlainSelect SetOperationList WithItem)))
+    ExceptOp IntersectOp MinusOp ParenthesedSelect PlainSelect
+    SetOperationList UnionOp WithItem)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -83,17 +84,66 @@
         (assert (= (count @qualify-context) 1))
         (swap! subcontext conj `{:qualify ~@(deref qualify-context)})))
     (swap! subcontext
-           (fn [x]
-             [(cond-> (apply merge-with into x)
+           (fn [subcontext']
+             [(cond-> (apply merge-with into subcontext')
                 (:distinct sql-parts-delayed)
                 (set/rename-keys {:select :select-distinct}))]))
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))
 
-(defmethod visit-after SetOperationList [_ sql-parsed context _]
-  ;; #t sql-parsed
-  ;; #t context
-  #_(throw (ex-info "N/A" {:sql-parsed sql-parsed, :context context})))
+(defmulti sqh-fn type)
+
+(defmethod sqh-fn clojure.lang.Keyword [x]
+  (case x
+    :except     sqh/except
+    :except-all sqh/except-all
+    :intersect  sqh/intersect
+    :union      sqh/union
+    :union-all  sqh/union-all))
+
+(defmethod sqh-fn ExceptOp [x]
+  (if-not (.isAll x)
+    sqh/except
+    sqh/except-all))
+
+(defmethod sqh-fn IntersectOp [x]
+  (assert (not (.isAll x)))
+  sqh/intersect)
+
+(defmethod sqh-fn MinusOp [x]
+  (throw (ex-info "N/A" {:x x})))
+
+(defmethod sqh-fn UnionOp [x]
+  (if-not (.isAll x)
+    sqh/union
+    sqh/union-all))
+
+(defmethod visit-before SetOperationList [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after SetOperationList
+  [that sql-parsed context subcontext]
+  (let [set-ops (map sqh-fn (.getOperations sql-parsed))
+        selects @subcontext
+        sql-seq (->> (concat [(take 2 selects)] (nthrest selects 2))
+                     (interleave set-ops)
+                     (partition 2 2))]
+    (->> (rest sql-seq)
+         (reduce (fn [{:as left} [op right]]
+                   (let [op-left-k (-> left keys iff-first)]
+                     (if (= op (sqh-fn op-left-k))
+                       (apply op (conj (op-left-k left) right))
+                       (op left right))))
+                 (let [[op [left right]] (first sql-seq)]
+                   (op left right)))
+         (swap! context conj))
+    (let [order-by-context (atom [])]
+      (.visitOrderBy (.getExpressionVisitor that)
+                     (.getOrderByElements sql-parsed)
+                     order-by-context)
+      (when (seq @order-by-context)
+        (swap! context
+               (poke #(merge % (iff-first @order-by-context))))))))
 
 (defmethod visit-after WithItem [_ sql-parsed context _]
   (let [alias (some-> sql-parsed .getAlias .getName keyword)]

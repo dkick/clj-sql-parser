@@ -2,7 +2,7 @@
   (:require
    [dkick.clj-sql-parser.multifn :as multifn])
   (:import
-   (net.sf.jsqlparser.statement.select PlainSelect)))
+   (net.sf.jsqlparser.statement.select PlainSelect SetOperationList)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -11,3 +11,5 @@
   [sql-parsed context])
 
 (defmethod visit-after PlainSelect [_ _ _ _])
+
+(defmethod visit-after SetOperationList [_ _ _ _])

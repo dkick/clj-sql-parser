@@ -4,6 +4,7 @@
  {babashka/fs                      {:mvn/version "0.5.26"}
   com.github.jsqlparser/jsqlparser {:mvn/version "5.4-SNAPSHOT"}
   com.github.seancorfield/honeysql {:mvn/version "2.7.9999-SNAPSHOT"}
+  dev.weavejester/medley           {:mvn/version "1.8.1"}
   org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
 
   metosin/malli {:mvn/version "0.19.1"}
