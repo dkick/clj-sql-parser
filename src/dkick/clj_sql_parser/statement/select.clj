@@ -135,14 +135,14 @@
           sql-seq (->> (concat [(take 2 selects)] (nthrest selects 2))
                        (interleave set-ops)
                        (partition 2 2))]
-      (->> (rest sql-seq)
-           (reduce (fn [{:as left} [op right]]
-                     (let [op-left-key (-> left keys iff-first)]
-                       (if (= op (sqh-fn op-left-key))
-                         (apply op (conj (op-left-key left) right))
-                         (op left right))))
-                   (let [[op [left right]] (first sql-seq)]
-                     (op left right)))))
+      (reduce (fn [{:as left} [op right]]
+                (let [op-left-key (-> left keys iff-first)]
+                  (if (= op (sqh-fn op-left-key))
+                    (apply op (conj (op-left-key left) right))
+                    (op left right))))
+              (let [[op [left right]] (first sql-seq)]
+                (op left right))
+              (rest sql-seq)))
     (let [order-by-context (atom [])]
       (.visitOrderBy (.getExpressionVisitor that)
                      (.getOrderByElements sql-parsed)
