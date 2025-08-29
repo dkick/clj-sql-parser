@@ -189,4 +189,11 @@
            "ORDER BY a ASC, b ASC")))))
 
 (comment
+  [:case
+   ;; when
+   [:< [:now] :expiry-date]
+   ;; then
+   :created-date
+   ;; obviously ...
+   :else :expiry-date]
   #__)

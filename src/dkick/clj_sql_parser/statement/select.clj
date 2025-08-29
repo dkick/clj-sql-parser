@@ -123,27 +123,32 @@
 
 (defmethod visit-after SetOperationList
   [that sql-parsed context subcontext]
-  (let [set-ops (map sqh-fn (.getOperations sql-parsed))
-        selects @subcontext
-        sql-seq (->> (concat [(take 2 selects)] (nthrest selects 2))
-                     (interleave set-ops)
-                     (partition 2 2))]
-    (->> (rest sql-seq)
-         (reduce (fn [{:as left} [op right]]
-                   (let [op-left-k (-> left keys iff-first)]
-                     (if (= op (sqh-fn op-left-k))
-                       (apply op (conj (op-left-k left) right))
-                       (op left right))))
-                 (let [[op [left right]] (first sql-seq)]
-                   (op left right)))
-         (swap! context conj))
+  (#(swap! context conj %)
+   (merge
+    (when-let [with-items (-> sql-parsed .getWithItemsList seq)]
+      (let [with-items-context (atom [])]
+        (doseq [x with-items]
+          (-> x (.accept that with-items-context)))
+        (apply merge-with into @with-items-context)))
+    (let [set-ops (map sqh-fn (.getOperations sql-parsed))
+          selects @subcontext
+          sql-seq (->> (concat [(take 2 selects)] (nthrest selects 2))
+                       (interleave set-ops)
+                       (partition 2 2))]
+      (->> (rest sql-seq)
+           (reduce (fn [{:as left} [op right]]
+                     (let [op-left-key (-> left keys iff-first)]
+                       (if (= op (sqh-fn op-left-key))
+                         (apply op (conj (op-left-key left) right))
+                         (op left right))))
+                   (let [[op [left right]] (first sql-seq)]
+                     (op left right)))))
     (let [order-by-context (atom [])]
       (.visitOrderBy (.getExpressionVisitor that)
                      (.getOrderByElements sql-parsed)
                      order-by-context)
       (when (seq @order-by-context)
-        (swap! context
-               (poke #(merge % (iff-first @order-by-context))))))))
+        (iff-first @order-by-context))))))
 
 (defmethod visit-after WithItem [_ sql-parsed context _]
   (let [alias (some-> sql-parsed .getAlias .getName keyword)]

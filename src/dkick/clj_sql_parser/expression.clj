@@ -6,8 +6,9 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    AnalyticExpression AnalyticType BinaryExpression CastExpression
-    Expression Function LongValue StringValue TrimFunction)
+    AnalyticExpression AnalyticType BinaryExpression CaseExpression
+    CastExpression Expression Function LongValue NullValue StringValue
+    TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
@@ -93,6 +94,23 @@
            (poke (fn [left-expression]
                    [:cast left-expression col-data-type])))))
 
+(defmethod visit-before CaseExpression [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after CaseExpression [_ sql-parsed context subcontext]
+  ;; expect to find one or more [when then] in the subcontext. the
+  ;; else expression is part of the case. we're not sure if that'll be
+  ;; in the subcontext or not
+  (swap! context conj (with-meta
+                        (->> @subcontext
+                             (partition 2 2 nil)
+                             (mapcat (fn [[x y]]
+                                       (if (some? y)
+                                         [x y]
+                                         [:else x])))
+                             (apply conj [:case]))
+                        {:type :sql-fn})))
+
 (defmethod visit-after Column [_ sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
 
@@ -116,13 +134,13 @@
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
                           [op % nil]))))
 
-(defmethod visit-after ParenthesedExpressionList [_ _ _ _])
-
-;;; We cannot quite believe that there is no base class for all of
-;;; these simple value types
-
 (defmethod visit-after LongValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
+
+(defmethod visit-after NullValue [_ _ context _]
+  (swap! context conj nil))
+
+(defmethod visit-after ParenthesedExpressionList [_ _ _ _])
 
 (defmethod visit-after StringValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
@@ -134,6 +152,11 @@
   [(let [args (into-array Expression [(.getExpression sql-parsed)])]
      (Function. "TRIM" args))
    (atom [])])
+
+(defmethod visit-after WhenClause [_ _ _context _]
+  ;; The values already exist on/in the context atom. No need to do
+  ;; anything else
+  #__)
 
 (defmethod visit-order-by OrderByElement [that sql-parsed context]
   (.accept (.getExpression sql-parsed) that context)
