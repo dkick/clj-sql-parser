@@ -10,8 +10,9 @@
   (when sql-parsed
     (let [[sql-parsed subcontext]
           (visit-before this sql-parsed context)]
-      (.superVisit this sql-parsed subcontext)
-      (visit-after this sql-parsed context subcontext)))
+      (when sql-parsed
+        (.superVisit this sql-parsed subcontext)
+        (visit-after this sql-parsed context subcontext))))
   context)
 
 (defn -visitOrderBy [this sql-parsed context]

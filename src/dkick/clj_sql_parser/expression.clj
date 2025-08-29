@@ -6,14 +6,14 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    AnalyticExpression AnalyticType BinaryExpression CaseExpression
-    CastExpression Expression Function LongValue NullValue SignedExpression
-    StringValue TrimFunction WhenClause)
+    AllValue AnalyticExpression AnalyticType BinaryExpression
+    CaseExpression CastExpression Expression Function LongValue NullValue
+    SignedExpression StringValue TimeKeyExpression TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
-    IsNullExpression ParenthesedExpressionList)
+    InExpression IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select
-    AllColumns GroupByElement OrderByElement)))
+    AllColumns GroupByElement OrderByElement ParenthesedSelect Select)))
 
 (defmulti visit-after multifn/visit-subcontext-group)
 (defmulti visit-before multifn/visit-context-group)
@@ -30,6 +30,9 @@
       (doseq [x except]
         (.accept x that except-context))
       (swap! context (poke (fn [x] [x :except @except-context]))))))
+
+(defmethod visit-after AllValue [_ _ context _]
+  (swap! context conj :ALL))
 
 (defmethod visit-before AnalyticExpression [_ sql-parsed _]
   [sql-parsed (atom [])])
@@ -130,6 +133,17 @@
 (defmethod visit-after GroupByElement [_ _ context subcontext]
   (swap! context conj (apply sqh/group-by @subcontext)))
 
+(defmethod visit-after InExpression [_ sql-parsed context _]
+  (assert (not (.isGlobal sql-parsed)))
+  (swap! context
+         (fn [context']
+           (let [op       (if (.isNot sql-parsed) :not-in :in)
+                 right    (peek context')
+                 context' (pop context')
+                 left     (peek context')
+                 context' (pop context')]
+             (conj context' [op left right])))))
+
 (defmethod visit-after IsNullExpression [_ sql-parsed context _]
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
                           [op % nil]))))
@@ -142,11 +156,23 @@
 
 (defmethod visit-after ParenthesedExpressionList [_ _ _ _])
 
+(defmethod visit-before ParenthesedSelect [that sql-parsed context]
+  (assert (not (.getPivot sql-parsed)))
+  (.accept (.getSelect sql-parsed) that context)
+  ;; skip ExpressionVisitorAdapter/.visit and visit-after
+  [nil nil])
+
+(defmethod visit-after Select [_ _ _ _])
+
 (defmethod visit-after SignedExpression [_ _ context _]
   (swap! context (poke #(- %))))
 
 (defmethod visit-after StringValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
+
+(defmethod visit-after TimeKeyExpression [_ sql-parsed context _]
+  (assert (= (.getStringValue sql-parsed) "current_timestamp()"))
+  (swap! context conj :current_timestamp))
 
 (defmethod visit-before TrimFunction [_ sql-parsed _]
   (assert (nil? (.getTrimSpecification sql-parsed)))

@@ -3,7 +3,8 @@
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]))
+   [honey.sql :as sql]
+   [honey.sql.helpers :as sqh]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -84,6 +85,12 @@
           :where  [:= :a 1]}
          (get-sql-honey
           "SELECT * FROM t WHERE a = 1")))
+  (is (= {:select [:a],
+          :from   [:t],
+          :where  [:not-in :a {:select [:a]
+                               :from   [:u]}]}
+         (get-sql-honey
+          "SELECT a FROM t WHERE a NOT IN (SELECT a FROM u)")))
   (is (= {:select   [:a],
           :from     [[{:select [:*]
                        :from   [:t]
@@ -189,4 +196,21 @@
            "ORDER BY a ASC, b ASC")))))
 
 (comment
+  [::sqh/_]
+
+  (get-sql-honey
+   "SELECT a FROM t WHERE a NOT IN (SELECT a FROM u)")
+
+  (sut/sql-honey
+   "SELECT a FROM (SELECT a FROM t)")
+
+  (sut/sql-honey
+   "SELECT a FROM t WHERE a = (SELECT a FROM t)")
+
+ (-> (sut/parse
+      "SELECT a FROM t WHERE a = (SELECT a FROM t)")
+     .getWhere
+     .getRightExpression)
+
+ (sut/sql-honey "(SELECT * FROM t)")
   #__)
