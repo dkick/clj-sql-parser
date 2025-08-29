@@ -7,8 +7,8 @@
   (:import
    (net.sf.jsqlparser.expression
     AnalyticExpression AnalyticType BinaryExpression CaseExpression
-    CastExpression Expression Function LongValue NullValue StringValue
-    TrimFunction WhenClause)
+    CastExpression Expression Function LongValue NullValue SignedExpression
+    StringValue TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
     IsNullExpression ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
@@ -77,7 +77,7 @@
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
-           (let [operator (-> sql-parsed
+           (let [op       (-> sql-parsed
                               .getStringExpression
                               str/lower-case
                               keyword)
@@ -85,7 +85,7 @@
                  context' (pop context')
                  left     (peek context')
                  context' (pop context')]
-             (conj context' [operator left right])))))
+             (conj context' [op left right])))))
 
 (defmethod visit-after CastExpression [_ sql-parsed context _]
   (let [col-data-type
@@ -97,7 +97,7 @@
 (defmethod visit-before CaseExpression [_ sql-parsed _]
   [sql-parsed (atom [])])
 
-(defmethod visit-after CaseExpression [_ sql-parsed context subcontext]
+(defmethod visit-after CaseExpression [_ _ context subcontext]
   ;; expect to find one or more [when then] in the subcontext. the
   ;; else expression is part of the case. we're not sure if that'll be
   ;; in the subcontext or not
@@ -142,6 +142,9 @@
 
 (defmethod visit-after ParenthesedExpressionList [_ _ _ _])
 
+(defmethod visit-after SignedExpression [_ _ context _]
+  (swap! context (poke #(- %))))
+
 (defmethod visit-after StringValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
 
@@ -153,10 +156,7 @@
      (Function. "TRIM" args))
    (atom [])])
 
-(defmethod visit-after WhenClause [_ _ _context _]
-  ;; The values already exist on/in the context atom. No need to do
-  ;; anything else
-  #__)
+(defmethod visit-after WhenClause [_ _ _ _])
 
 (defmethod visit-order-by OrderByElement [that sql-parsed context]
   (.accept (.getExpression sql-parsed) that context)
