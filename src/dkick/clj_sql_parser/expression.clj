@@ -6,7 +6,7 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    AllValue AnalyticExpression AnalyticType BinaryExpression
+    AllValue AnalyticExpression AnalyticType BinaryExpression BooleanValue
     CaseExpression CastExpression Expression Function LongValue NullValue
     SignedExpression StringValue TimeKeyExpression TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
@@ -90,6 +90,9 @@
                  left     (peek context')
                  context' (pop context')]
              (conj context' [op left right])))))
+
+(defmethod visit-after BooleanValue [_ sql-parsed context _]
+  (swap! context conj (.getValue sql-parsed)))
 
 (defmethod visit-after CastExpression [_ sql-parsed context _]
   (let [col-data-type
