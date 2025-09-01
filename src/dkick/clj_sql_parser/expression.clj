@@ -207,8 +207,18 @@
   (swap! context conj (.getValue sql-parsed)))
 
 (defmethod visit-after TimeKeyExpression [_ sql-parsed context _]
-  (assert (= (.getStringValue sql-parsed) "current_timestamp()"))
-  (swap! context conj :current_timestamp))
+  (swap! context conj
+         (condp = (.getStringValue sql-parsed)
+           "current_date"        :current_date
+           "current_date()"      :current_date
+           "current_timestamp"   :current_timestamp
+           "current_timestamp()" :current_timestamp
+           (throw
+            (ex-info "unknown value"
+                     {:string-value (.getStringValue sql-parsed)
+                      :type         (type sql-parsed)
+                      :sql-parsed   sql-parsed
+                      :context      context})))))
 
 (defmethod visit-before TrimFunction [_ sql-parsed _]
   (assert (nil? (.getTrimSpecification sql-parsed)))
