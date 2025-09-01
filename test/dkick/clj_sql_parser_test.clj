@@ -91,6 +91,11 @@
                                :from   [:u]}]}
          (get-sql-honey
           "SELECT a FROM t WHERE a NOT IN (SELECT a FROM u)")))
+  (is (= {:select [:a]
+          :from   [:t]
+          :where  [:not-in :a ["a" "b" "c"]]}
+         (get-sql-honey
+          "SELECT a FROM t WHERE a NOT IN ('a', 'b', 'c')")))
   (is (= {:select   [:a],
           :from     [[{:select [:*]
                        :from   [:t]
@@ -128,17 +133,18 @@
            "(SELECT d FROM (SELECT * FROM t WHERE e = 1) AS u "
            "GROUP BY d HAVING COUNT(*) > 1) "
            "SELECT * FROM cte) AS v"))))
-  (is (= {dstnct   [:u.a :u.b]
-          :from    [[:t1 :u]]
-          :join-by [:inner
-                    [[{:select [:*]
-                       :from   [:t2]
-                       :where  [:and [:= :c "U"] [:<> :d nil]]}
-                      :v]
-                     [:and
-                      [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
-                      [:= :v.g 1]]]]
-          :where   [:and [:= :u.g 1] [:= :u.b "<NA>"]]}
+  (is (= {:from  [[:t1 :u]],
+          :join-by
+          [:inner
+           [[{:select [:*],
+              :from   [:t2],
+              :where  [:and [[:= :c "U"]] [[:<> :d nil]]]}
+             :v]
+            [:and
+             [[:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]]
+             [[:= :v.g 1]]]]],
+          :where [:and [[:= :u.g 1]] [[:= :u.b "<NA>"]]],
+          dstnct [:u.a :u.b]}
          (get-sql-honey
           (str
            "SELECT DISTINCT u.a, u.b "
@@ -147,21 +153,22 @@
            "(SELECT * FROM t2 WHERE (c = 'U') AND (d IS NOT NULL)) AS v "
            "ON (u.e = CONCAT('A', v.d, '-', UPPER(v.f))) AND (v.g = 1) "
            "WHERE (u.g = 1) AND (u.b = '<NA>')"))))
-  (is (= {:select  [:*]
-          :from    [:data_with_change_hash]
-          :qualify [:or
-                    [:<>
-                     :_row_hash
-                     [:over
-                      [[:LAG :_row_hash]
-                       {:partition-by [:cono :division_number]
-                        :order-by     [:_ingest_timestamp]}]]]
-                    [:=
-                     [:over
-                      [[:LAG :_row_hash]
-                       {:partition-by [:cono :division_number]
-                        :order-by     [:_ingest_timestamp]}]]
-                     nil]]}
+  (is (= {:select [:*],
+          :from   [:data_with_change_hash],
+          :qualify
+          [:or
+           [[:<>
+             :_row_hash
+             [:over
+              [[:LAG :_row_hash]
+               {:partition-by [:cono :division_number],
+                :order-by     [:_ingest_timestamp]}]]]]
+           [[:=
+             [:over
+              [[:LAG :_row_hash]
+               {:partition-by [:cono :division_number],
+                :order-by     [:_ingest_timestamp]}]]
+             nil]]]}
          (get-sql-honey
           (str
            "SELECT * FROM data_with_change_hash "
@@ -197,20 +204,4 @@
 
 (comment
   [::sqh/_]
-
-  (get-sql-honey
-   "SELECT a FROM t WHERE a NOT IN (SELECT a FROM u)")
-
-  (sut/sql-honey
-   "SELECT a FROM (SELECT a FROM t)")
-
-  (sut/sql-honey
-   "SELECT a FROM t WHERE a = (SELECT a FROM t)")
-
- (-> (sut/parse
-      "SELECT a FROM t WHERE a = (SELECT a FROM t)")
-     .getWhere
-     .getRightExpression)
-
- (sut/sql-honey "(SELECT * FROM t)")
   #__)

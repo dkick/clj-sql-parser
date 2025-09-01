@@ -10,7 +10,8 @@
     CaseExpression CastExpression Expression Function LongValue NullValue
     SignedExpression StringValue TimeKeyExpression TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
-    InExpression IsNullExpression ParenthesedExpressionList)
+    InExpression IsBooleanExpression IsNullExpression
+    ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select
     AllColumns GroupByElement OrderByElement ParenthesedSelect Select)))
@@ -133,16 +134,23 @@
 (defmethod visit-after GroupByElement [_ _ context subcontext]
   (swap! context conj (apply sqh/group-by @subcontext)))
 
-(defmethod visit-after InExpression [_ sql-parsed context _]
-  (assert (not (.isGlobal sql-parsed)))
+(defmethod visit-after IsBooleanExpression [_ sql-parsed context _]
   (swap! context
-         (fn [context']
-           (let [op       (if (.isNot sql-parsed) :not-in :in)
-                 right    (peek context')
-                 context' (pop context')
-                 left     (peek context')
-                 context' (pop context')]
-             (conj context' [op left right])))))
+         (poke (fn [left]
+                 (let [op    (if (.isNot sql-parsed) :is-not :is)
+                       right (if (.isTrue sql-parsed) true false)]
+                   [op left right])))))
+
+(defmethod visit-after InExpression [_ sql-parsed context _]
+    (assert (not (.isGlobal sql-parsed)))
+    (swap! context
+           (fn [context']
+             (let [op       (if (.isNot sql-parsed) :not-in :in)
+                   right    (peek context')
+                   context' (pop context')
+                   left     (peek context')
+                   context' (pop context')]
+               (conj context' [op left right])))))
 
 (defmethod visit-after IsNullExpression [_ sql-parsed context _]
   (swap! context (poke #(let [op (if (.isNot sql-parsed) :<> :=)]
@@ -154,7 +162,11 @@
 (defmethod visit-after NullValue [_ _ context _]
   (swap! context conj nil))
 
-(defmethod visit-after ParenthesedExpressionList [_ _ _ _])
+(defmethod visit-before ParenthesedExpressionList [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after ParenthesedExpressionList [_ _ context subcontext]
+  (swap! context conj @subcontext))
 
 (defmethod visit-before ParenthesedSelect [that sql-parsed context]
   (assert (not (.getPivot sql-parsed)))
