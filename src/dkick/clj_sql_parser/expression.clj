@@ -6,9 +6,10 @@
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
-    AllValue AnalyticExpression AnalyticType BinaryExpression BooleanValue
-    CaseExpression CastExpression Expression Function LongValue NullValue
-    SignedExpression StringValue TimeKeyExpression TrimFunction WhenClause)
+    AllValue AnalyticExpression AnalyticType ArrayExpression BinaryExpression
+    BooleanValue CaseExpression CastExpression DoubleValue Expression
+    Function LongValue NullValue SignedExpression StringValue
+    TimeKeyExpression TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
     InExpression IsBooleanExpression IsNullExpression
     ParenthesedExpressionList)
@@ -78,6 +79,23 @@
 
     (swap! context #(apply conj %1 %2) (sqh/over args))))
 
+(defmethod visit-before ArrayExpression [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after ArrayExpression [_ sql-parsed context subcontext]
+  (assert (not (.getStartIndexExpression sql-parsed)))
+  (assert (not (.getStopIndexExpression sql-parsed)))
+  (let [[object index] @subcontext]
+    (swap! context conj
+           (with-meta
+             ;; The Honey SQL version, i.e. get-in, is variadic, which
+             ;; is why we're using a subcontext. However, the Java SQL
+             ;; Parser version seems to be different, e.g. support for
+             ;; a range syntax
+             [:get-in object index]
+             ;; This makes for an easy test in visit-after SelectItem
+             {:type :sql-fn}))))
+
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
@@ -121,15 +139,18 @@
 (defmethod visit-after Column [_ sql-parsed context _]
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
 
+(defmethod visit-after DoubleValue [_ sql-parsed context _]
+  (swap! context conj (.getValue sql-parsed)))
+
 (defmethod visit-before Function [_ sql-parsed _]
   [sql-parsed (atom [])])
 
 (defmethod visit-after Function [_ sql-parsed context subcontext]
   (swap! context conj
          (with-meta
-          (apply conj [(-> sql-parsed .getName keyword)] @subcontext)
-          ;; This makes for an easy test in visit-after SelectItem
-          {:type :sql-fn})))
+           (apply conj [(-> sql-parsed .getName keyword)] @subcontext)
+           ;; This makes for an easy test in visit-after SelectItem
+           {:type :sql-fn})))
 
 (defmethod visit-before GroupByElement [_ sql-parsed _]
   [sql-parsed (atom [])])
