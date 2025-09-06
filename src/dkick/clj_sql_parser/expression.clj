@@ -1,7 +1,7 @@
 (ns dkick.clj-sql-parser.expression
   (:require
    [clojure.string :as str]
-   [dkick.clj-sql-parser.multifn :as multifn]
+   [dkick.clj-sql-parser.visitors :as visitors]
    [dkick.clj-sql-parser.olio :refer [poke]]
    [honey.sql.helpers :as sqh])
   (:import
@@ -17,9 +17,9 @@
    (net.sf.jsqlparser.statement.select
     AllColumns GroupByElement OrderByElement ParenthesedSelect Select)))
 
-(defmulti visit-after multifn/visit-subcontext-group)
-(defmulti visit-before multifn/visit-context-group)
-(defmulti visit-order-by multifn/visit-context-group)
+(defmulti visit-after visitors/visit-after-group)
+(defmulti visit-before visitors/visit-before-group)
+(defmulti visit-order-by visitors/visit-before-group)
 
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
