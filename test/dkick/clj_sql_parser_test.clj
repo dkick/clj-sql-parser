@@ -96,12 +96,12 @@
           :where  [:not-in :a ["a" "b" "c"]]}
          (get-sql-honey
           "SELECT a FROM t WHERE a NOT IN ('a', 'b', 'c')")))
-  (is (= {:select   [:a],
+  (is (= {:select   [:a]
           :from     [[{:select [:*]
                        :from   [:t]
                        :where  [:= :b 1]}
-                      :subquery]],
-          :group-by [:a],
+                      :subquery]]
+          :group-by [:a]
           :having   [:> [:COUNT :*] 1]}
          (get-sql-honey
           ;; The "AS subquery" is optional but sql/format produces a
@@ -122,6 +122,7 @@
                                     :u]]
                         :group-by [:d]
                         :having   [:> [:COUNT :*] 1]}]]
+
                      :select [:*]
                      :from   [:cte]}
                     :v]]}
@@ -133,17 +134,19 @@
            "(SELECT d FROM (SELECT * FROM t WHERE e = 1) AS u "
            "GROUP BY d HAVING COUNT(*) > 1) "
            "SELECT * FROM cte) AS v"))))
-  (is (= {:from  [[:t1 :u]],
+  (is (= {:from [[:t1 :u]]
+
           :join-by
           [:inner
-           [[{:select [:*],
-              :from   [:t2],
+           [[{:select [:*]
+              :from   [:t2]
               :where  [:and [[:= :c "U"]] [[:<> :d nil]]]}
              :v]
             [:and
              [[:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]]
-             [[:= :v.g 1]]]]],
-          :where [:and [[:= :u.g 1]] [[:= :u.b "<NA>"]]],
+             [[:= :v.g 1]]]]]
+
+          :where [:and [[:= :u.g 1]] [[:= :u.b "<NA>"]]]
           dstnct [:u.a :u.b]}
          (get-sql-honey
           (str
@@ -153,8 +156,9 @@
            "(SELECT * FROM t2 WHERE (c = 'U') AND (d IS NOT NULL)) AS v "
            "ON (u.e = CONCAT('A', v.d, '-', UPPER(v.f))) AND (v.g = 1) "
            "WHERE (u.g = 1) AND (u.b = '<NA>')"))))
-  (is (= {:select [:*],
-          :from   [:data_with_change_hash],
+  (is (= {:select [:*]
+          :from   [:data_with_change_hash]
+
           :qualify
           [:or
            [[:<>
@@ -185,12 +189,19 @@
   (is (= {:union
           [{:intersect
             [{:union
-              [{:select [:*], :from [:t1]}
-               {:select [:*], :from [:t2]}
-               {:select [:*], :from [:t3]}
-               {:select [:*], :from [:t4]}]}
-             {:select [:*], :from [:t5]}]}
-           {:select [:*], :from [:t6]}],
+              [{:select [:*]
+                :from   [:t1]}
+               {:select [:*]
+                :from   [:t2]}
+               {:select [:*]
+                :from   [:t3]}
+               {:select [:*]
+                :from   [:t4]}]}
+             {:select [:*]
+              :from   [:t5]}]}
+           {:select [:*]
+            :from   [:t6]}]
+
           :order-by [:a :b]}
          (get-sql-honey
           (str
