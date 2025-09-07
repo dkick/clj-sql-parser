@@ -4,8 +4,7 @@
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
    [honey.sql :as sql]
-   [honey.sql.helpers :as sqh]
-   [clojure.string :as str]))
+   [honey.sql.helpers :as sqh]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)

@@ -16,7 +16,8 @@
     ParenthesedExpressionList)
    (net.sf.jsqlparser.schema Column)
    (net.sf.jsqlparser.statement.select
-    AllColumns GroupByElement OrderByElement ParenthesedSelect Select)))
+    AllColumns AllTableColumns GroupByElement OrderByElement ParenthesedSelect
+    Select)))
 
 (defmulti visit-after visitors/visit-after-group)
 (defmulti visit-before visitors/visit-before-group)
@@ -28,6 +29,19 @@
 (defmethod visit-after AllColumns [that sql-parsed context _]
   (assert (not (-> sql-parsed .getReplaceExpressions seq)))
   (swap! context conj :*)
+  (when-let [except (-> sql-parsed .getExceptColumns seq)]
+    (let [except-context (atom [])]
+      (doseq [x except]
+        (.accept x that except-context))
+      (swap! context (poke (fn [x] [x :except @except-context]))))))
+
+(defmethod visit-after AllTableColumns [that sql-parsed context _]
+  (assert (not (-> sql-parsed .getReplaceExpressions seq)))
+  (swap! context conj
+         (let [table (-> sql-parsed
+                         .getTable
+                         get-fully-qualified-name)]
+           (keyword (str (name table) ".*"))))
   (when-let [except (-> sql-parsed .getExceptColumns seq)]
     (let [except-context (atom [])]
       (doseq [x except]

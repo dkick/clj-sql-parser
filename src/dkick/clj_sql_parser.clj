@@ -84,11 +84,7 @@
   (sql-json (parse s)))
 
 (defmethod format :sql/honey [m]
-  (when-let [kv (seq (select-keys m [:create-view
-                                     :create-materilized-view
-                                     :create-or-replace-view]))]
-    (throw (ex-info "N/A" {:keys (keys kv)
-                           :m    m})))
+  ;; Mostly just a pass through with defaulted options
   (sql/format m {:inline true}))
 
 (defn println-sql-honey [{:keys [s]}]
