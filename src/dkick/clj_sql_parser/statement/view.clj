@@ -87,6 +87,6 @@
   (assert (not (.isWithReadOnly sql-parsed)))
   (let [create (create-view-fn sql-parsed)
         view   (make-view sql-parsed)
+        view   (apply create view)
         select (make-select that sql-parsed)]
-    (swap! context conj (merge (apply create view)
-                               select))))
+    (swap! context conj (merge view select))))
