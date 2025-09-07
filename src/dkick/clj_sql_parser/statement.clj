@@ -1,8 +1,10 @@
 (ns dkick.clj-sql-parser.statement
   (:require
    [dkick.clj-sql-parser.visitors :as visitors]
+   [dkick.clj-sql-parser.statement.table :refer [create-table]]
    [dkick.clj-sql-parser.statement.view :refer [create-view]])
   (:import
+   (net.sf.jsqlparser.statement.create.table CreateTable)
    (net.sf.jsqlparser.statement.create.view CreateView)
    (net.sf.jsqlparser.statement.select
     ParenthesedSelect PlainSelect SetOperationList)))
@@ -12,6 +14,9 @@
 
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
+
+(defmethod visit-after CreateTable [that sql-parsed context _]
+  (create-table that sql-parsed context))
 
 (defmethod visit-after CreateView [that sql-parsed context _]
   (create-view that sql-parsed context))
