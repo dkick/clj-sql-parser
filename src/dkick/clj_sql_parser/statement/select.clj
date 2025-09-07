@@ -91,9 +91,9 @@
     (assert (= (count @subcontext) 1))
     (swap! context #(apply conj %1 %2) @subcontext)))
 
-(defmulti sqh-fn type)
+(defmulti set-op-fn type)
 
-(defmethod sqh-fn clojure.lang.Keyword [x]
+(defmethod set-op-fn clojure.lang.Keyword [x]
   (case x
     :except     sqh/except
     :except-all sqh/except-all
@@ -101,19 +101,19 @@
     :union      sqh/union
     :union-all  sqh/union-all))
 
-(defmethod sqh-fn ExceptOp [x]
+(defmethod set-op-fn ExceptOp [x]
   (if-not (.isAll x)
     sqh/except
     sqh/except-all))
 
-(defmethod sqh-fn IntersectOp [x]
+(defmethod set-op-fn IntersectOp [x]
   (assert (not (.isAll x)))
   sqh/intersect)
 
-(defmethod sqh-fn MinusOp [x]
+(defmethod set-op-fn MinusOp [x]
   (throw (ex-info "N/A" {:x x})))
 
-(defmethod sqh-fn UnionOp [x]
+(defmethod set-op-fn UnionOp [x]
   (if-not (.isAll x)
     sqh/union
     sqh/union-all))
@@ -130,14 +130,14 @@
         (doseq [x with-items]
           (-> x (.accept that with-items-context)))
         (apply merge-with into @with-items-context)))
-    (let [set-ops (map sqh-fn (.getOperations sql-parsed))
+    (let [set-ops (map set-op-fn (.getOperations sql-parsed))
           selects @subcontext
           sql-seq (->> (concat [(take 2 selects)] (nthrest selects 2))
                        (interleave set-ops)
                        (partition 2 2))]
       (reduce (fn [{:as left} [op right]]
                 (let [op-left-key (-> left keys iff-first)]
-                  (if (= op (sqh-fn op-left-key))
+                  (if (= op (set-op-fn op-left-key))
                     (apply op (conj (op-left-key left) right))
                     (op left right))))
               (let [[op [left right]] (first sql-seq)]

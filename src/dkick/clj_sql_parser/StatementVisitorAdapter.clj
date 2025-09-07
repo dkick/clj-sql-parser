@@ -9,8 +9,9 @@
   (when sql-parsed
     (let [[sql-parsed subcontext]
           (visit-before this sql-parsed context)]
-      (.superVisit this sql-parsed subcontext)
-      (visit-after this sql-parsed context subcontext)))
+      (when sql-parsed
+        (.superVisit this sql-parsed subcontext)
+        (visit-after this sql-parsed context subcontext))))
   (let [[car & cdr] @context]
     (assert (nil? cdr))
     car))

@@ -1,4 +1,7 @@
 (ns dkick.clj-sql-parser
+  (:refer-clojure :exclude [format])
+  (:require
+   [honey.sql :as sql])
   (:import
    (dkick.clj_sql_parser ExpressionVisitorAdapter)
    (dkick.clj_sql_parser StatementVisitorAdapter)
@@ -12,6 +15,10 @@
     MultilineRecursiveToStringStyle ReflectionToStringBuilder
     ToStringBuilder ToStringStyle)))
 
+(defmulti format type)
+(defmulti sql-honey type)
+(defmulti sql-json type)
+
 (defn parse
   ([s]
    (let [c (reify Consumer
@@ -20,7 +27,7 @@
      (parse s ^Consumer c)))
   ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
 
-(defn visitors []
+(defn make-visitors []
   (let [ev  (ExpressionVisitorAdapter.)
         pv  (PivotVisitorAdapter. ev)
         siv (SelectItemVisitorAdapter. ev)
@@ -32,32 +39,31 @@
      :select-item-visitor siv
      :select-visitor      sv}))
 
-(defn statement-visitor
-  ([] (statement-visitor (:select-visitor (visitors))))
+(def visitors (make-visitors))
+
+(defn make-statement-visitor
+  ([] (make-statement-visitor (:select-visitor visitors)))
   ([select-visitor] (StatementVisitorAdapter. select-visitor)))
 
-(def x-statement-visitor (statement-visitor))
-
-(defmulti sql-honey type)
+(def statement-visitor (make-statement-visitor))
 
 (defmethod sql-honey String [s]
-  ;; Unfortunately the Java interop makes it difficult to avoid using
-  ;; an atom
-  (let [context (atom [])]
-    (-> s
-        parse
-        (.accept x-statement-visitor context))))
+  (with-meta
+    ;; Unfortunately the Java interop makes it difficult to avoid
+    ;; using an atom
+    (let [context (atom [])]
+      (-> s
+          parse
+          (.accept statement-visitor context)))
+    {:type :sql/honey}))
 
 (defmethod sql-honey Statement [x]
-  ;; Unfortunately the Java interop makes it difficult to avoid using
-  ;; an atom
-  (let [context (atom [])]
-    (.accept x x-statement-visitor context)))
-
-(defn print-sql-honey [{:keys [s]}]
-  (println (sql-honey s)))
-
-(defmulti sql-json type)
+  (with-meta
+    ;; Unfortunately the Java interop makes it difficult to avoid
+    ;; using an atom
+    (let [context (atom [])]
+      (.accept x statement-visitor context))
+    {:type :sql/honey}))
 
 (defmethod sql-json Statement [statement]
   ;; Java is making our lifes difficult here. MRTSS needs to sublcass
@@ -76,3 +82,18 @@
 
 (defmethod sql-json String [s]
   (sql-json (parse s)))
+
+(defmethod format :sql/honey [m]
+  (when-let [kv (seq (select-keys m [:create-view
+                                     :create-materilized-view
+                                     :create-or-replace-view]))]
+    (throw (ex-info "N/A" {:keys (keys kv)
+                           :m    m})))
+  (sql/format m {:inline true}))
+
+(defn println-sql-honey [{:keys [s]}]
+  (println (sql-honey s)))
+
+(comment
+  [#'println-sql-honey]
+  #__)

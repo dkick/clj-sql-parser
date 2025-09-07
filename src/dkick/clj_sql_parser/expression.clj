@@ -137,6 +137,7 @@
                         {:type :sql-fn})))
 
 (defmethod visit-after Column [_ sql-parsed context _]
+  (assert (nil? (.getCommentText sql-parsed)))
   (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
 
 (defmethod visit-after DoubleValue [_ sql-parsed context _]
