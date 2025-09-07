@@ -4,7 +4,8 @@
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
    [honey.sql :as sql]
-   [honey.sql.helpers :as sqh]))
+   [honey.sql.helpers :as sqh]
+   [clojure.string :as str]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
@@ -186,6 +187,28 @@
            "OVER "
            "(PARTITION BY cono, division_number "
            "ORDER BY _ingest_timestamp ASC) IS NULL)"))))
+  (is (= {:select
+          [[[:COALESCE
+             [:over
+              [[:LEAD [:COALESCE :a [:cast "1900-01-01" :timestamp]]]
+               {:partition-by [:b :c]
+                :order-by
+                [[[:COALESCE :a [:cast "1900-01-01" :timestamp]]]]}]]
+             [:cast "2200-01-01" :timestamp]]
+            :z]]
+
+          :from [:t]}
+         (get-sql-honey
+          (str
+           "SELECT "
+           "COALESCE("
+           "LEAD(COALESCE(a, CAST('1900-01-01' AS TIMESTAMP))) OVER ("
+           "PARTITION BY b, c "
+           "ORDER BY COALESCE(a, CAST('1900-01-01' AS TIMESTAMP)) ASC"
+           "), "
+           "CAST('2200-01-01' AS TIMESTAMP)"
+           ") AS z "
+           "FROM t"))))
   (is (= {:union
           [{:intersect
             [{:union

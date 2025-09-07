@@ -234,7 +234,9 @@
 
 (defmethod visit-order-by OrderByElement [that sql-parsed context]
   (.accept (.getExpression sql-parsed) that context)
-  (swap! context (poke #(sqh/order-by %))))
+  (swap! context (poke #(sqh/order-by (if (= (type %) :sql-fn)
+                                        [%]
+                                        %)))))
 
 (defmethod visit-order-by java.util.List [that sql-parsed context]
     (let [subcontext (atom [])]
