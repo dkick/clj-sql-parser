@@ -3,6 +3,7 @@
    [clojure.string :as str]
    [dkick.clj-sql-parser.visitors :as visitors]
    [dkick.clj-sql-parser.olio :refer [poke]]
+   [dkick.clj-sql-parser.schema :refer [get-fully-qualified-name]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.expression
@@ -138,7 +139,7 @@
 
 (defmethod visit-after Column [_ sql-parsed context _]
   (assert (nil? (.getCommentText sql-parsed)))
-  (swap! context conj (-> sql-parsed .getFullyQualifiedName keyword)))
+  (swap! context conj (get-fully-qualified-name sql-parsed)))
 
 (defmethod visit-after DoubleValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))

@@ -1,5 +1,6 @@
 (ns dkick.clj-sql-parser.statement.select.from-item.joins
   (:require
+   [dkick.clj-sql-parser.schema :refer [get-fully-qualified-name]]
    [honey.sql.helpers :as sqh])
   (:import
    (net.sf.jsqlparser.schema Table)
@@ -23,7 +24,7 @@
       [(conj @context alias)])))
 
 (defmethod visit-join Table [_ sql-parsed]
-  (let [x-name (keyword (.getFullyQualifiedName sql-parsed))
+  (let [x-name (get-fully-qualified-name sql-parsed)
         alias  (.getAlias sql-parsed)]
     [(if-not alias
        x-name

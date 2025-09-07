@@ -1,9 +1,8 @@
 (ns dkick.clj-sql-parser.statement.view
   (:require
-   [clojure.string :as str]
+   [dkick.clj-sql-parser.schema :refer [get-fully-qualified-name]]
    [honey.sql.helpers :as sqh])
   (:import
-   (net.sf.jsqlparser.schema MultiPartName)
    (net.sf.jsqlparser.statement.create.view
     AutoRefreshOption ForceOption TemporaryOption)))
 
@@ -25,42 +24,25 @@
 (defn make-view [sql-parsed]
   ;; TODO We might need to do this split, unquote, join with fully
   ;; qualified names in other places
-  (let [view (-> sql-parsed .getView .getFullyQualifiedName)
-        view (->> (str/split view #"\.")
-                  (map MultiPartName/unquote)
-                  (str/join "."))
-        view (keyword view)
+  (let [view (-> sql-parsed .getView get-fully-qualified-name)]
+    (cond-> []
+      (not= (.getTemporary sql-parsed) TemporaryOption/NONE)
+      (conj (-> sql-parsed .getTemporary .getName keyword))
 
-        expr
-        (cond-> []
-          (not= (.getTemporary sql-parsed) TemporaryOption/NONE)
-          (conj (-> sql-parsed .getTemporary .getName keyword))
+      view (conj view)
 
-          view (conj view)
+      (.getViewCommentOptions sql-parsed)
+      (conj (let [[wtf <<comment>> comment]
+                  (.getViewCommentOptions sql-parsed)]
+              (assert (string? wtf))
+              (assert (empty? wtf)) ;why?
+              (assert (= "comment" <<comment>>))
+              (assert (string? (not-empty comment)))
+              [:comment (let [n (-> comment count dec)]
+                          (-> comment (subs 1 n)))]))
 
-          (.getViewCommentOptions sql-parsed)
-          (conj (let [[wtf <<comment>> comment]
-                      (.getViewCommentOptions sql-parsed)]
-                  (assert (string? wtf))
-                  (assert (empty? wtf)) ;why?
-                  (assert (= "comment" <<comment>>))
-                  (assert (string? (not-empty comment)))
-                  [:comment
-                   (let [n (-> comment count dec)]
-                     (-> comment (subs 1 n)))]))
-
-          (.isIfNotExists sql-parsed)
-          (conj :if-not-exists))]
-
-    expr
-    #_(condp = (count expr)
-      0 (throw (ex-info "empty view expression"
-                        {:sql-parsed sql-parsed
-                         :view       view
-                         :expr       expr}))
-      1 (let [[view] expr]
-          view)
-      expr)))
+      (.isIfNotExists sql-parsed)
+      (conj :if-not-exists))))
 
 (defn make-with-columns [sql-parsed]
   (->> (.getColumnNames sql-parsed)
