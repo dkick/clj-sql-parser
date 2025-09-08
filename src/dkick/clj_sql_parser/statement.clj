@@ -15,8 +15,11 @@
 (defmethod visit-before Object [_ sql-parsed context]
   [sql-parsed context])
 
-(defmethod visit-after CreateTable [that sql-parsed context _]
-  (create-table that sql-parsed context))
+(defmethod visit-before CreateTable [that sql-parsed context]
+  (create-table that sql-parsed context)
+  ;; We avoid the superclass method because it ends up passing the
+  ;; table into a fromItemVisitor, and we don't want a FROM clause
+  [nil nil])
 
 (defmethod visit-after CreateView [that sql-parsed context _]
   (create-view that sql-parsed context))

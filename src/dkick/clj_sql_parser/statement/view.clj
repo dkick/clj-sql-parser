@@ -41,12 +41,12 @@
        (reduce #(-> %1 (sqh/with-columns %2)) {})))
 
 (defn make-view [sql-parsed]
-  (let [view (-> sql-parsed .getView get-fully-qualified-name)]
+  (let [fqn (-> sql-parsed .getView get-fully-qualified-name)]
     (cond-> []
       (not= (.getTemporary sql-parsed) TemporaryOption/NONE)
       (conj (-> sql-parsed .getTemporary .getName keyword))
 
-      view (conj view)
+      fqn (conj fqn)
 
       (-> sql-parsed .getColumnNames seq)
       (conj (make-with-columns sql-parsed))
