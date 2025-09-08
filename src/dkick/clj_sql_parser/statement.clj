@@ -19,6 +19,7 @@
   (create-table that sql-parsed context)
   ;; We avoid the superclass method because it ends up passing the
   ;; table into a fromItemVisitor, and we don't want a FROM clause
+  ;; here
   [nil nil])
 
 (defmethod visit-after CreateView [that sql-parsed context _]
