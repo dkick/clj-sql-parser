@@ -19,10 +19,10 @@
   ;; Check for metadata in the context which might have been set in
   ;; ...statement.select/visit-before PlainSelect
   (swap! context
-           (poke #(let [-fn?   (-sql-fn? %)
-                        alias  (some-> sql-parsed .getAliasName keyword)]
-                    (sqh/select
-                     (cond
-                       alias [% alias]    ; also SQL fn w/ alias
-                       -fn?  [%]          ; only SQL fn w/o alias
-                       :else %))))))
+         (poke #(let [-fn?  (-sql-fn? %)
+                      alias (some-> sql-parsed .getAliasName keyword)]
+                  (sqh/select
+                   (cond
+                     alias [% alias]    ; also SQL fn w/ alias
+                     -fn?  [%]          ; only SQL fn w/o alias
+                     :else %))))))

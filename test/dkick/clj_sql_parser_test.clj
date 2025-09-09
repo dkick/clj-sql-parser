@@ -26,6 +26,9 @@
   (is (= {:select [1]}
          (get-sql-honey
           "SELECT 1")))
+  #_(is (= {}
+         (get-sql-honey
+          "SELECT 1+2+3+4")))
   (is (= {:select [:*]
           :from   [:t]}
          (get-sql-honey

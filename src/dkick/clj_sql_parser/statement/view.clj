@@ -6,7 +6,7 @@
    (net.sf.jsqlparser.statement.create.view
     AutoRefreshOption CreateView ForceOption TemporaryOption)
    (net.sf.jsqlparser.statement.select
-    ParenthesedSelect PlainSelect)))
+    ParenthesedSelect PlainSelect SetOperationList)))
 
 (defn create-view-fn [sql-parsed]
   (cond
@@ -40,11 +40,20 @@
                  s (conj [:comment s]))))
        (reduce #(-> %1 (sqh/with-columns %2)) {})))
 
+(defmulti get-name type)
+
+(defmethod get-name TemporaryOption [x]
+  (condp = x
+    TemporaryOption/NONE      :none
+    TemporaryOption/TEMP      :temporary
+    TemporaryOption/TEMPORARY :temporary
+    TemporaryOption/VOLATILE  :volatile))
+
 (defn make-view [sql-parsed]
   (let [fqn (-> sql-parsed .getView get-fully-qualified-name)]
     (cond-> []
       (not= (.getTemporary sql-parsed) TemporaryOption/NONE)
-      (conj (-> sql-parsed .getTemporary .getName keyword))
+      (conj (-> sql-parsed .getTemporary get-name))
 
       fqn (conj fqn)
 
@@ -75,6 +84,10 @@
   (make-select that (.getSelect sql-parsed)))
 
 (defmethod make-select PlainSelect [that sql-parsed]
+  (let [context (atom [])]
+    (.accept sql-parsed that context)))
+
+(defmethod make-select SetOperationList [that sql-parsed]
   (let [context (atom [])]
     (.accept sql-parsed that context)))
 

@@ -1,10 +1,11 @@
 (ns dkick.clj-sql-parser.expression
   (:require
    [clojure.string :as str]
-   [dkick.clj-sql-parser.visitors :as visitors]
    [dkick.clj-sql-parser.olio :refer [poke]]
    [dkick.clj-sql-parser.schema :refer [get-fully-qualified-name]]
-   [honey.sql.helpers :as sqh])
+   [dkick.clj-sql-parser.visitors :as visitors]
+   [honey.sql.helpers :as sqh]
+   [meander.strategy.epsilon :as mse])
   (:import
    (net.sf.jsqlparser.expression
     AllValue AnalyticExpression AnalyticType ArrayExpression BinaryExpression
@@ -122,7 +123,21 @@
                  context' (pop context')
                  left     (peek context')
                  context' (pop context')]
-             (conj context' [op left right])))))
+             (conj context' (with-meta
+                              [op left right]
+                              {:type :sql-fn}))))))
+
+(comment
+  ((mse/until =
+     (mse/attempt
+      (mse/find
+        [:+ . !xs ... [:+ . !ys ...] . !zs ...]
+        `[:+ ~@!xs ~@!ys ~@!zs]
+
+        _ mse/*fail*)))
+   [:+ [:+ 1 2] [:+ 3 4]])
+  ;; => [:+ 1 2 3 4]
+  #__)
 
 (defmethod visit-after BooleanValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
