@@ -26,9 +26,9 @@
   (is (= {:select [1]}
          (get-sql-honey
           "SELECT 1")))
-  #_(is (= {}
+  (is (= {:select [[[:+ 1 2 3 4]]]}
          (get-sql-honey
-          "SELECT 1+2+3+4")))
+          "SELECT 1 + 2 + 3 + 4")))
   (is (= {:select [:*]
           :from   [:t]}
          (get-sql-honey
@@ -240,4 +240,11 @@
 
 (comment
   [::sqh/_]
+
+  (-> "SELECT 1+2+3+4"
+      sut/sql-honey
+      (sql/format {:inline true}))
+
+  (-> {:select [[[:+ 1 2 3 4]]]}
+      (sql/format {:inline true}))
   #__)

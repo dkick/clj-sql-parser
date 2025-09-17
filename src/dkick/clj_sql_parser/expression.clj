@@ -10,7 +10,7 @@
    (net.sf.jsqlparser.expression
     AllValue AnalyticExpression AnalyticType ArrayExpression BinaryExpression
     BooleanValue CaseExpression CastExpression DoubleValue Expression
-    Function LongValue NullValue SignedExpression StringValue
+    Function LongValue NotExpression NullValue SignedExpression StringValue
     TimeKeyExpression TrimFunction WhenClause)
    (net.sf.jsqlparser.expression.operators.relational
     InExpression IsBooleanExpression IsNullExpression
@@ -112,6 +112,39 @@
              ;; This makes for an easy test in visit-after SelectItem
              {:type :sql-fn}))))
 
+(def arity
+  (mse/until =
+    (mse/attempt
+     (mse/find
+       [:!= . !xs ... [:!= . !ys ...] . !zs ...]
+       `[:!= ~@!xs ~@!ys ~@!zs]
+
+       [:* . !xs ... [:* . !ys ...] . !zs ...]
+       `[:* ~@!xs ~@!ys ~@!zs]
+
+       [:+ . !xs ... [:+ . !ys ...] . !zs ...]
+       `[:+ ~@!xs ~@!ys ~@!zs]
+
+       [:- . !xs ... [:- . !ys ...] . !zs ...]
+       `[:- ~@!xs ~@!ys ~@!zs]
+
+       [:/ . !xs ... [:/ . !ys ...] . !zs ...]
+       `[:/ ~@!xs ~@!ys ~@!zs]
+
+       [:<> . !xs ... [:<> . !ys ...] . !zs ...]
+       `[:<> ~@!xs ~@!ys ~@!zs]
+
+       [:= . !xs ... [:= . !ys ...] . !zs ...]
+       `[:= ~@!xs ~@!ys ~@!zs]
+
+       [:and . !xs ... [:and . !ys ...] . !zs ...]
+       `[:and ~@!xs ~@!ys ~@!zs]
+
+       [:or . !xs ... [:or . !ys ...] . !zs ...]
+       `[:or ~@!xs ~@!ys ~@!zs]
+
+       _ mse/*fail*))))
+
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
@@ -124,7 +157,7 @@
                  left     (peek context')
                  context' (pop context')]
              (conj context' (with-meta
-                              [op left right]
+                              (arity [op left right])
                               {:type :sql-fn}))))))
 
 (comment
@@ -213,6 +246,12 @@
 
 (defmethod visit-after LongValue [_ sql-parsed context _]
   (swap! context conj (.getValue sql-parsed)))
+
+(defmethod visit-before NotExpression [_ sql-parsed _]
+  [sql-parsed (atom [])])
+
+(defmethod visit-after NotExpression [_ _ context subcontext]
+  (swap! context conj `[:not ~@subcontext]))
 
 (defmethod visit-after NullValue [_ _ context _]
   (swap! context conj nil))

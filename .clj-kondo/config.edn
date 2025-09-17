@@ -1,0 +1,30 @@
+{:linters {:redundant-ignore {:level :off}
+
+           :unresolved-var
+           {:exclude [meander.epsilon/or
+                      meander.epsilon/and
+                      meander.epsilon/not
+                      meander.epsilon/keyword
+                      meander.epsilon/pred
+                      meander.epsilon/scan
+                      meander.epsilon/some
+                      meander.strategy.epsilon/or
+                      meander.strategy.epsilon/and
+                      meander.strategy.epsilon/not
+                      meander.strategy.epsilon/keyword
+                      meander.strategy.epsilon/pred
+                      meander.strategy.epsilon/scan
+                      meander.strategy.epsilon/some]}
+
+           :unresolved-symbol
+           {:exclude [(malli.core/=>)
+                      (meander.epsilon/find)
+                      (meander.epsilon/match)
+                      (meander.epsilon/rewrite)
+                      (meander.epsilon/rewrites)
+                      (meander.epsilon/search)
+                      (meander.strategy.epsilon/find)
+                      (meander.strategy.epsilon/match)
+                      (meander.strategy.epsilon/rewrite)
+                      (meander.strategy.epsilon/rewrites)
+                      (meander.strategy.epsilon/search)]}}}
