@@ -20,7 +20,8 @@
   (swap! context conj
          (let [alias (some-> sql-parsed .getAlias .getName keyword)]
            (sqh/from (cond-> [(apply merge-with into @subcontext)]
-                       alias (conj alias))))))
+                       alias (conj alias)))))
+  #p context)
 
 (defmethod visit-after Table [_ sql-parsed context _]
   (let [x-name (get-fully-qualified-name sql-parsed)

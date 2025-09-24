@@ -1,5 +1,6 @@
 (ns dkick.clj-sql-parser-test
   (:require
+   [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
@@ -241,10 +242,42 @@
 (comment
   [::sqh/_]
 
-  (-> "SELECT 1+2+3+4"
+  (-> "
+SELECT DISTINCT
+    dc.costcenter_key,
+    dc.cc_company
+FROM `dev_silver`.`dev_dkick_dimensions`.`dim_costcenter` AS dc
+LEFT JOIN `dev_silver`.`dev_dkick_facts`.`fact_orders` AS fo
+  ON fo.order_costcenter_key = dc.costcenter_key AND fo.st_row_current = 1
+WHERE dc.st_row_current = 1
+  AND dc.costcenter_identifier <> '<NA>'
+  -- ignore costcenters from orders before 1/1/23
+  AND (fo.order_costcenter_key IS NULL OR fo.order_entry_date >= '2023-01-01')
+  -- a row returned here will fail the test
+  AND dc.cc_company = '<NA>'"
+      str/trim
       sut/sql-honey
-      (sql/format {:inline true}))
+      #_(sql/format {:inline true})
+      #_first)
 
-  (-> {:select [[[:+ 1 2 3 4]]]}
-      (sql/format {:inline true}))
+  ;; => "SELECT DISTINCT dc.costcenter_key, dc.cc_company FROM dev_silver.dev_dkick_dimensions.dim_costcenter AS dc LEFT JOIN dev_silver.dev_dkick_facts.fact_orders AS fo ON (fo.order_costcenter_key = dc.costcenter_key) AND (fo.st_row_current = 1) WHERE (dc.st_row_current = 1) AND (dc.costcenter_identifier <> '<NA>') AND ((fo.order_costcenter_key IS NULL) OR (fo.order_entry_date >= '2023-01-01')) AND (dc.cc_company = '<NA>')"
+  ;; => {:from [[:dev_silver.dev_dkick_dimensions.dim_costcenter :dc]],
+  ;;
+  ;;     :join-by
+  ;;     [:left
+  ;;      [[:dev_silver.dev_dkick_facts.fact_orders :fo]
+  ;;       [:and
+  ;;        [:= :fo.order_costcenter_key :dc.costcenter_key]
+  ;;        [:= :fo.st_row_current 1]]]],
+  ;;
+  ;;     :where
+  ;;     [:and
+  ;;      [:= :dc.st_row_current 1]
+  ;;      [:<> :dc.costcenter_identifier "<NA>"]
+  ;;      [[:or
+  ;;        [:= :fo.order_costcenter_key nil]
+  ;;        [:>= :fo.order_entry_date "2023-01-01"]]]
+  ;;      [:= :dc.cc_company "<NA>"]],
+  ;;
+  ;;     :select-distinct [:dc.costcenter_key :dc.cc_company]}
   #__)

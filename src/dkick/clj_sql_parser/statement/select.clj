@@ -19,7 +19,8 @@
   [sql-parsed (atom [])])
 
 (defmethod visit-after ParenthesedSelect [_ _ context subcontext]
-  (swap! context conj [(apply merge-with into @subcontext)]))
+  (swap! context conj [(apply merge-with into @subcontext)])
+  #p context)
 
 ;; There are some issues and/or bugs in the members of a
 ;; PlainSelect. We work around these here by modifing the instance in
