@@ -1,9 +1,10 @@
 # com.github.dkick/clj-sql-parser
 
-Uses Java SQL Parser to transpile SQL into Honey SQL. This is
-currently being tested against a number of DBT compiled SQL files
-targetting Databricks SQL, and the testing has been targetted mostly
-against those files, at the moment.
+Inspired by [Macaw](https://github.com/metabase/macaw), this uses Java
+SQL Parser to transpile SQL into Honey SQL. This is currently being
+tested against a number of DBT compiled SQL files targetting
+Databricks SQL, and the testing has been targetted mostly against
+those files, at the moment.
 
 ## Usage
 
