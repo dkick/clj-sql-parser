@@ -1,5 +1,6 @@
 (ns dkick.clj-sql-parser-test
   (:require
+   [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
@@ -143,13 +144,13 @@
           [:inner
            [[{:select [:*]
               :from   [:t2]
-              :where  [:and [[:= :c "U"]] [[:<> :d nil]]]}
+              :where  [:and [:= :c "U"] [:<> :d nil]]}
              :v]
             [:and
-             [[:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]]
-             [[:= :v.g 1]]]]]
+             [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
+             [:= :v.g 1]]]]
 
-          :where [:and [[:= :u.g 1]] [[:= :u.b "<NA>"]]]
+          :where [:and [:= :u.g 1] [:= :u.b "<NA>"]]
           dstnct [:u.a :u.b]}
          (get-sql-honey
           (str
@@ -164,18 +165,18 @@
 
           :qualify
           [:or
-           [[:<>
-             :_row_hash
-             [:over
-              [[:LAG :_row_hash]
-               {:partition-by [:cono :division_number],
-                :order-by     [:_ingest_timestamp]}]]]]
-           [[:=
-             [:over
-              [[:LAG :_row_hash]
-               {:partition-by [:cono :division_number],
-                :order-by     [:_ingest_timestamp]}]]
-             nil]]]}
+           [:<>
+            :_row_hash
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number],
+               :order-by     [:_ingest_timestamp]}]]]
+           [:=
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number],
+               :order-by     [:_ingest_timestamp]}]]
+            nil]]}
          (get-sql-honey
           (str
            "SELECT * FROM data_with_change_hash "
@@ -240,11 +241,4 @@
 
 (comment
   [::sqh/_]
-
-  (-> "SELECT 1+2+3+4"
-      sut/sql-honey
-      (sql/format {:inline true}))
-
-  (-> {:select [[[:+ 1 2 3 4]]]}
-      (sql/format {:inline true}))
   #__)
