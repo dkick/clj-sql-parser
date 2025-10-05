@@ -1,16 +1,16 @@
 {:paths ["src" "target/classes" "resources"]
 
  :deps
- {babashka/fs                      {:mvn/version "0.5.26"}
+ {babashka/fs                      {:mvn/version "0.5.27"}
   com.github.jsqlparser/jsqlparser {:mvn/version "5.4-SNAPSHOT"}
   com.github.seancorfield/honeysql {:mvn/version "2.7.1350"}
-  dev.weavejester/medley           {:mvn/version "1.8.1"}
+  dev.weavejester/medley           {:mvn/version "1.9.0"}
   meander/epsilon                  {:mvn/version "0.0.650"}
-  org.apache.commons/commons-lang3 {:mvn/version "3.18.0"}
+  org.apache.commons/commons-lang3 {:mvn/version "3.19.0"}
 
   metosin/malli {:mvn/version "0.19.1"}
 
-  org.clojure/clojure {:mvn/version "1.12.1"}}
+  org.clojure/clojure {:mvn/version "1.12.3"}}
 
  :aliases
  {:test

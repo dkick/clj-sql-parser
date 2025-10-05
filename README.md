@@ -1,9 +1,10 @@
 # com.github.dkick/clj-sql-parser
 
-Uses Java SQL Parser to transpile SQL into Honey SQL. This is
-currently being tested against a number of DBT compiled SQL files
-targetting Databricks SQL, and the testing has been targetted mostly
-against those files, at the moment.
+Inspired by [Macaw](https://github.com/metabase/macaw), this uses Java
+SQL Parser to transpile SQL into Honey SQL. This is currently being
+tested against a number of DBT compiled SQL files targetting
+Databricks SQL, and the testing has been targetted mostly against
+those files, at the moment.
 
 ## Usage
 
@@ -18,7 +19,7 @@ Invoke a library API function from the command-line:
     $ clojure -X dkick.clj-sql-parser/print-sql-honey :s '"SELECT COUNT(*) <> 0 AS x FROM (SELECT a AS b FROM t AS u) WHERE x = 1"'
     {:select [[[:<> [:COUNT :*] 0] :x]], :from [[{:select [[:a :b]], :from [[:t :u]]}]], :where [:= :x 1]}
 
-Run the project's tests (they'll fail until you edit them):
+Run the project's tests:
 
     $ clojure -T:build test
 
