@@ -1,12 +1,12 @@
 # com.github.dkick/clj-sql-parser
 
-Inspired by [Macaw](https://github.com/metabase/macaw), this uses Java
-SQL Parser to transpile SQL into Honey SQL. This is currently being
-tested against a number of DBT compiled SQL files targetting
-Databricks SQL, and the testing has been targetted mostly against
-those files, at the moment. Those files were proprietary, and so I
-have not included them as part of any automated test suite; but I have
-included an example of an SQL query with similar structure in the
+Somewhat inspired by [Macaw](https://github.com/metabase/macaw), this
+uses Java SQL Parser to transpile SQL into Honey SQL. This is
+currently being tested against a number of DBT compiled SQL files
+targetting Databricks SQL, and the testing has been targetted mostly
+against those files, at the moment. Those files were proprietary, and
+so I have not included them as part of any automated test suite; but I
+have included an example of an SQL query with similar structure in the
 automated test suite(s) when it produced an error. I also have not
 been approaching this from a case-by-case analysis of the underlying
 Java classes or by attempting to methodically process SQL grammer, but
