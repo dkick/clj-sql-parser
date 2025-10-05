@@ -50,7 +50,8 @@
 (defmethod sql-honey String [s]
   (with-meta
     ;; Unfortunately the Java interop makes it difficult to avoid
-    ;; using an atom
+    ;; using mutable data structures; i.e. contexts are passed into
+    ;; functions but none of the default methods return them
     (let [context (atom [])]
       (-> s
           parse
@@ -60,7 +61,8 @@
 (defmethod sql-honey Statement [x]
   (with-meta
     ;; Unfortunately the Java interop makes it difficult to avoid
-    ;; using an atom
+    ;; using mutable data structures; i.e. contexts are passed into
+    ;; functions but none of the default methods return them
     (let [context (atom [])]
       (.accept x statement-visitor context))
     {:type :sql/honey}))

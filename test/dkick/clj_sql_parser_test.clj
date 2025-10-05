@@ -1,15 +1,13 @@
 (ns dkick.clj-sql-parser-test
   (:require
-   [clojure.string :as str]
    [clojure.test :refer [deftest is]]
    ;; (S)ystem (U)nder (T)est
    [dkick.clj-sql-parser :as sut]
-   [honey.sql :as sql]
    [honey.sql.helpers :as sqh]))
 
 (defn reparse [sql-str]
   (let [x-sql-honey  (sut/sql-honey sql-str)
-        [sql-str']   (sql/format x-sql-honey {:inline true})
+        [sql-str']   (sut/format x-sql-honey)
         x-sql-honey' (sut/sql-honey sql-str')]
     (is (= sql-str sql-str'))
     (is (= x-sql-honey x-sql-honey'))
