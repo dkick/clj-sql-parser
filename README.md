@@ -55,6 +55,6 @@ Your library will be deployed to com.github.dkick/clj-sql-parser on clojars.org 
 
 ## License
 
-Copyright © 2025 Dkick
+Copyright © 2025 Damien Kick
 
 Distributed under the GNU GPL version 3.
