@@ -144,13 +144,13 @@
           [:inner
            [[{:select [:*]
               :from   [:t2]
-              :where  [:and [[:= :c "U"]] [[:<> :d nil]]]}
+              :where  [:and [:= :c "U"] [:<> :d nil]]}
              :v]
             [:and
-             [[:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]]
-             [[:= :v.g 1]]]]]
+             [:= :u.e [:CONCAT "A" :v.d "-" [:UPPER :v.f]]]
+             [:= :v.g 1]]]]
 
-          :where [:and [[:= :u.g 1]] [[:= :u.b "<NA>"]]]
+          :where [:and [:= :u.g 1] [:= :u.b "<NA>"]]
           dstnct [:u.a :u.b]}
          (get-sql-honey
           (str
@@ -165,18 +165,18 @@
 
           :qualify
           [:or
-           [[:<>
-             :_row_hash
-             [:over
-              [[:LAG :_row_hash]
-               {:partition-by [:cono :division_number],
-                :order-by     [:_ingest_timestamp]}]]]]
-           [[:=
-             [:over
-              [[:LAG :_row_hash]
-               {:partition-by [:cono :division_number],
-                :order-by     [:_ingest_timestamp]}]]
-             nil]]]}
+           [:<>
+            :_row_hash
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number],
+               :order-by     [:_ingest_timestamp]}]]]
+           [:=
+            [:over
+             [[:LAG :_row_hash]
+              {:partition-by [:cono :division_number],
+               :order-by     [:_ingest_timestamp]}]]
+            nil]]}
          (get-sql-honey
           (str
            "SELECT * FROM data_with_change_hash "
@@ -241,43 +241,4 @@
 
 (comment
   [::sqh/_]
-
-  (-> "
-SELECT DISTINCT
-    dc.costcenter_key,
-    dc.cc_company
-FROM `dev_silver`.`dev_dkick_dimensions`.`dim_costcenter` AS dc
-LEFT JOIN `dev_silver`.`dev_dkick_facts`.`fact_orders` AS fo
-  ON fo.order_costcenter_key = dc.costcenter_key AND fo.st_row_current = 1
-WHERE dc.st_row_current = 1
-  AND dc.costcenter_identifier <> '<NA>'
-  -- ignore costcenters from orders before 1/1/23
-  AND (fo.order_costcenter_key IS NULL OR fo.order_entry_date >= '2023-01-01')
-  -- a row returned here will fail the test
-  AND dc.cc_company = '<NA>'"
-      str/trim
-      sut/sql-honey
-      #_(sql/format {:inline true})
-      #_first)
-
-  ;; => "SELECT DISTINCT dc.costcenter_key, dc.cc_company FROM dev_silver.dev_dkick_dimensions.dim_costcenter AS dc LEFT JOIN dev_silver.dev_dkick_facts.fact_orders AS fo ON (fo.order_costcenter_key = dc.costcenter_key) AND (fo.st_row_current = 1) WHERE (dc.st_row_current = 1) AND (dc.costcenter_identifier <> '<NA>') AND ((fo.order_costcenter_key IS NULL) OR (fo.order_entry_date >= '2023-01-01')) AND (dc.cc_company = '<NA>')"
-  ;; => {:from [[:dev_silver.dev_dkick_dimensions.dim_costcenter :dc]],
-  ;;
-  ;;     :join-by
-  ;;     [:left
-  ;;      [[:dev_silver.dev_dkick_facts.fact_orders :fo]
-  ;;       [:and
-  ;;        [:= :fo.order_costcenter_key :dc.costcenter_key]
-  ;;        [:= :fo.st_row_current 1]]]],
-  ;;
-  ;;     :where
-  ;;     [:and
-  ;;      [:= :dc.st_row_current 1]
-  ;;      [:<> :dc.costcenter_identifier "<NA>"]
-  ;;      [[:or
-  ;;        [:= :fo.order_costcenter_key nil]
-  ;;        [:>= :fo.order_entry_date "2023-01-01"]]]
-  ;;      [:= :dc.cc_company "<NA>"]],
-  ;;
-  ;;     :select-distinct [:dc.costcenter_key :dc.cc_company]}
   #__)

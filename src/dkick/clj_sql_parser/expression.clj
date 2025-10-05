@@ -116,6 +116,12 @@
   (mse/until =
     (mse/attempt
      (mse/find
+       [[!xs ...]]
+       `[~@!xs]
+
+       [!xs ... . [[!ys ...]] . !zs ...]
+       `[~@!xs [~@!ys] ~@ !zs]
+
        [:!= . !xs ... [:!= . !ys ...] . !zs ...]
        `[:!= ~@!xs ~@!ys ~@!zs]
 
@@ -145,6 +151,19 @@
 
        _ mse/*fail*))))
 
+(comment
+  (arity [:+ [:+ 1 2]])
+  ;; => [:+ 1 2]
+  (arity [:+ [:+ 1 2] [:+ 3 4]])
+  ;; => [:+ 1 2 3 4]
+  (arity [:+ [:+ 1 2] [:+ 3 4] [:+ 5 6]])
+  ;; => [:+ 1 2 3 4 5 6]
+  (arity [[:+ 1 2]])
+  ;; => [:+ 1 2]
+  (arity [:and [:= :x 1] [[:= :y 2]] [[[:= :z 3]]]])
+  ;; => [:and [:= :x 1] [:= :y 2] [:= :z 3]]
+  #__)
+
 (defmethod visit-after BinaryExpression [_ sql-parsed context _]
   (swap! context
          (fn [context']
@@ -157,7 +176,7 @@
                  left     (peek context')
                  context' (pop context')]
              (conj context' (with-meta
-                              #p (arity [op #p left #p right])
+                              (arity [op left right])
                               {:type :sql-fn}))))))
 
 (defmethod visit-after BooleanValue [_ sql-parsed context _]
@@ -248,8 +267,7 @@
   [sql-parsed (atom [])])
 
 (defmethod visit-after ParenthesedExpressionList [_ _ context subcontext]
-  (swap! #p context conj #p @subcontext)
-  #p context)
+  (swap! context conj @subcontext))
 
 (defmethod visit-before ParenthesedSelect [that sql-parsed context]
   (assert (not (.getPivot sql-parsed)))

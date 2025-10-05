@@ -28,16 +28,16 @@
   ([s ^Consumer c] (CCJSqlParserUtil/parse s c)))
 
 (defn make-visitors []
-  (let [ev  (ExpressionVisitorAdapter.)
-        pv  (PivotVisitorAdapter. ev)
-        siv (SelectItemVisitorAdapter. ev)
-        fiv (FromItemVisitorAdapter. ev)
-        sv  (SelectVisitorAdapter. ev pv siv fiv)]
-    {:expression-visitor  (doto ev (.setSelectVisitor sv))
-     :from-item-visitor   (doto fiv (.setSelectVisitor sv))
-     :pivot-visitor       pv
-     :select-item-visitor siv
-     :select-visitor      sv}))
+  (let [eva  (ExpressionVisitorAdapter.)
+        pva  (PivotVisitorAdapter. eva)
+        siva (SelectItemVisitorAdapter. eva)
+        fiva (FromItemVisitorAdapter. eva)
+        sva  (SelectVisitorAdapter. eva pva siva fiva)]
+    {:expression-visitor  (doto eva (.setSelectVisitor sva))
+     :from-item-visitor   (doto fiva (.setSelectVisitor sva))
+     :pivot-visitor       pva
+     :select-item-visitor siva
+     :select-visitor      sva}))
 
 (def visitors (make-visitors))
 
